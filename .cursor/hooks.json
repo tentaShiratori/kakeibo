@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "hooks": {
+    "postToolUse": [
+      {
+        "command": "node .cursor/hooks/crg-update.ts",
+        "timeout": 30
+      }
+    ],
+    "sessionStart": [
+      {
+        "command": "node .cursor/hooks/crg-session-start.ts",
+        "timeout": 20
+      }
+    ]
+  }
+}

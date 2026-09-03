@@ -1,0 +1,21 @@
+{
+  "name": "kakeibo",
+  "private": true,
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "clean": "turbo clean",
+    "check-types": "turbo check-types",
+    "shadcn": "pnpm --filter @repo/ui shadcn",
+    "tauri": "pnpm --filter native tauri"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "prettier": "^3.2.5",
+    "turbo": "^2.3.3",
+    "typescript": "5.5.4"
+  },
+  "packageManager": "pnpm@11.17.0"
+}

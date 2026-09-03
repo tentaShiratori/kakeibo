@@ -1,0 +1,41 @@
+# --- Node.js ---
+node_modules/
+dist/
+
+# --- Claude Code ---
+# 個人ごとの許可設定。ローカルの絶対パスが入るため共有しない
+.claude/settings.local.json
+# code-review-graph install が既存の settings.json を書き換えるときに作るバックアップ
+.claude/settings.json.bak
+# .claude/settings.json はここに足さない。フックの実体がそこにあり、
+# 除外すると clone した人に編集時フックとセッション開始フックが渡らない
+# 許可承認は本来 settings.local.json に入るが、settings.json に溜まることがある
+# コミット前に git diff .claude/settings.json で permissions が増えていないか確認する
+
+# --- code-review-graph / better-code-review-graph ---
+# グラフDB本体（.code-review-graph/graph.db）は各自の環境で build して生成する
+# .db ファイルを Git で管理している場合は *.db の行を外す
+.code-review-graph/
+*.db
+
+# --- Graphify ---
+# 出力は graphify-out/ に入る（graph.json / graph.html / GRAPH_REPORT.md / cost.json）
+# /graphify . で再生成されるためコミット不要
+.graphify/
+graphify-out/
+# 下は graphify-out/ の外に出た場合の保険
+graph.html
+graph.json
+GRAPH_REPORT.md
+# エクスポート系（--obsidian / --wiki を使った場合の出力先）
+obsidian/
+wiki/
+
+# --- Serena ---
+# .serena/ 内の独自 .gitignore がキャッシュと個人設定を除外する
+# （.serena/project.yml は共有するのでコミット対象）
+# memories は独自 .gitignore の対象外。Serena が書き込むとコミット対象になるため除外する
+.serena/memories/
+
+# --- Turbo ---
+.turbo/

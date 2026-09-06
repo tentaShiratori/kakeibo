@@ -1,0 +1,13 @@
+---
+description: Directory layout and placement rules
+alwaysApply: true
+---
+
+# 配置
+
+- `apps/web` — Next.js 16（App Router）。コードを書く前に `apps/web/node_modules/next/dist/docs/` を読む
+- `apps/app` — Tauri + React + Vite
+- `api` — Go
+- `packages` — 共有パッケージ置き場。今は空
+
+既存ファイルの隣に置く。domain / types などの層や新しいパッケージは、その配置が既にあるときだけ使う。層を先に新設しない。

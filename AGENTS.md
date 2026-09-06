@@ -27,3 +27,9 @@ better-code-review-graph はアクション型の統合ツール構成。`query`
 ### フォールバック
 
 better-code-review-graph の `query`（`action=search`）が0件 → `/graphify query` で広域検索 → Serena `find_symbol`（部分一致）→ Grep / Glob / Read
+
+## ハーネス運用
+
+- 返答は日本語
+- 機能追加は `add-feature` スキル、テスト追加は `write-test` スキルに従う
+- `progress.md` はセッション開始フックが注入する。意思決定・作業完了時に更新する

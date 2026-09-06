@@ -11,6 +11,23 @@
       {
         "command": "node .cursor/hooks/crg-session-start.ts",
         "timeout": 20
+      },
+      {
+        "command": "node .cursor/hooks/memory-session-start.ts",
+        "timeout": 10
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": "node .cursor/hooks/format.ts",
+        "timeout": 20
+      }
+    ],
+    "stop": [
+      {
+        "command": "node .cursor/hooks/typecheck-stop.ts",
+        "timeout": 60,
+        "loop_limit": 3
       }
     ]
   }

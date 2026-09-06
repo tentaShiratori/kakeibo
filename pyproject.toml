@@ -5,11 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 authors = [{ name = "tentaShiratori", email = "tenta.shiratori@gmail.com" }]
 requires-python = ">=3.14"
-dependencies = [
-    "better-code-review-graph>=3.21.0",
-    "code-review-graph>=2.3.8",
-    "graphifyy>=0.8.38",
-]
+dependencies = ["better-code-review-graph>=3.21.0", "code-review-graph>=2.3.8", "graphifyy>=0.8.38"]
 
 [project.scripts]
 kakeibo = "kakeibo:main"

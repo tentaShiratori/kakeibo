@@ -10,6 +10,10 @@
     "lint": {
       "dependsOn": ["^lint"]
     },
+    "fmt": {
+      "cache": false
+    },
+    "fmt:check": {},
     "typecheck": {
       "dependsOn": ["^typecheck"]
     },

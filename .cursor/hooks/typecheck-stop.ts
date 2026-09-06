@@ -13,9 +13,7 @@ const result = spawnSync(process.execPath, [turbo, "typecheck"], {
   windowsHide: true,
 });
 
-const output = `${result.stdout ?? ""}${result.stderr ?? ""}`
-  .replaceAll("\r\n", "\n")
-  .trim();
+const output = `${result.stdout ?? ""}${result.stderr ?? ""}`.replaceAll("\r\n", "\n").trim();
 
 if (result.status !== 0 && loopCount < 3) {
   writeJson({

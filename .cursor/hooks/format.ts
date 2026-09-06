@@ -7,8 +7,8 @@ const filePath = input.file_path ?? "";
 const ext = extname(filePath).toLowerCase();
 
 if (filePath && [".ts", ".tsx", ".md"].includes(ext)) {
-  const prettier = join(repoRoot(), "node_modules", "prettier", "bin", "prettier.cjs");
-  spawnSync(process.execPath, [prettier, "--write", filePath], {
+  const oxfmt = join(repoRoot(), "node_modules", "oxfmt", "bin", "oxfmt");
+  spawnSync(process.execPath, [oxfmt, filePath], {
     cwd: repoRoot(),
     windowsHide: true,
   });

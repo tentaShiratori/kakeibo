@@ -1,6 +1,6 @@
 ## 現在の状態
 
-- 実装済み: apps/web の入出金記録（金額・入出日・メモ、直す・消す、戻す、暦月の収支と一覧、壊れた保存のひとつ前）、TanStack Form と Valibot による入力検証、ドメイン（CONTEXT.md / ADR-0001〜0013）、oxlint / oxfmt / vitest、apps/app 初期テンプレ、api Hello World、GitHub の issue / PR テンプレート、Dependabot の週次更新、PR / main の CI、Dependabot の minor / patch は CI 通過後に自動マージ、fallow による不要コード検査
+- 実装済み: apps/web の入出金記録（金額・入出日・メモ、直す・消す、戻す、暦月の収支と一覧、壊れた保存のひとつ前）、Jotai の atomWithStorage によるブラウザ保存、TanStack Form と Valibot による入力検証、ドメイン（CONTEXT.md / ADR-0001〜0013）、oxlint / oxfmt / vitest、apps/app 初期テンプレ、api Hello World、GitHub の issue / PR テンプレート、Dependabot の週次更新、PR / main の CI、Dependabot の minor / patch は CI 通過後に自動マージ、fallow による不要コード検査
 - 作業中: なし
 - 未着手: 枠の名前、入出金の API / app 側、端末をまたぐ同じ一冊
 
@@ -34,6 +34,9 @@
 - 2026-09-07: Dependabot の minor / patch は CI 成功後に squash マージする。major は触らない。リポジトリの Allow auto-merge はオフなので、workflow_run で CI 完了を待ってから gh pr merge する
 - 2026-09-07: PR と main の push で GitHub Actions を回す。JS は pnpm lint / fmt:check / typecheck / test。Go は gofmt -l と go test。ツールのバージョンは mise.toml。turbo に test を足した。CI ではパッケージのテストを全部回す
 - 2026-09-07: web の typecheck は `next typegen` のあと `tsc`。LayoutProps は生成型なので、クリーンな CI では typegen が要る
+- 2026-09-07: web の入出金画面は `useNyushukkin` / `NyushukkinForm` / `NyushukkinItem` に分け、`Ledger` は組み立てだけ。ファイルは `app/_lib/` の PascalCase
+- 2026-09-07: ブラウザ保存は Jotai の `atomWithStorage`。キーと壊れた保存のひとつ前（`.bak`）は変えない。消した入出金の戻すは画面にいる間だけなので atom に載せない
+- 2026-09-07: 金額の数値化は Valibot の `toNumber`。スキーマの出力を使い、パース後の `Number` は置かない
 - 2026-09-07: 不要コードは fallow。テスト専用の export は本番に置かない。CI は `fallow dead-code` と `--production` の両方。`skills` は CLI なので ignore。warn 系は advisory のまま
 
 ## 次のセッションで対応すること

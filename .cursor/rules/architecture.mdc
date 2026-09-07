@@ -1,5 +1,5 @@
 ---
-description: Directory layout and placement rules
+description: Directory layout and file naming
 alwaysApply: true
 ---
 
@@ -10,4 +10,23 @@ alwaysApply: true
 - `api` — Go
 - `packages` — 共有パッケージ置き場。今は空
 
-既存ファイルの隣に置く。domain / types などの層や新しいパッケージは、その配置が既にあるときだけ使う。層を先に新設しない。
+`apps/web` の各 `page.tsx` と同じフォルダに `_lib/` を置く。予約ファイルと、ルート `layout.tsx` が読む `globals.css` はセグメント直下。ページ用のコンポーネント・フック・純関数・テストは `_lib/`。子ルートは自分の `_lib` を持つ。
+
+予約ファイルは `page` / `layout` / `loading` / `error` / `not-found` / `route` / `template` / `default` / `global-error` と、icon などのメタデータファイル。`_` 始まりはルーティングに出ない。
+
+それ以外（`apps/app`、`api`）は既存ファイルの隣。domain / types などの層や `features/` は、その配置が既にあるときだけ使う。層を先に新設しない。
+
+# 名前
+
+ファイル名は中の主な export に合わせる。用語は CONTEXT.md の語をローマ字にする（`entry` や `transaction` にはしない）。ケバブケースにしない。
+
+| 対象 | ファイル名 | 例 |
+| --- | --- | --- |
+| コンポーネント | `Xxx.tsx` | `app/_lib/Ledger.tsx` |
+| カスタムフック | `useXxx.ts`（JSX なら `.tsx`） | `app/_lib/useNyushukkin.ts` |
+| 純関数・型 | `xxx.ts` | `app/_lib/nyushukkin.ts` |
+| テスト | 対象の隣に `*.test.ts` / `*.test.tsx` | `app/_lib/Ledger.test.tsx` |
+| Next.js の予約名 | フレームワークどおり小文字 | `page.tsx`, `layout.tsx` |
+| Go | 小文字。テストは `_test.go` | `main.go` |
+| Rust | snake_case | `lib.rs` |
+| ADR | `NNNN-kebab-case.md` | `0001-one-household-ledger.md` |

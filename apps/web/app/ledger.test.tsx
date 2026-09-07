@@ -172,7 +172,9 @@ test("他の月にだけ入出金があるときはこの月が空だと分か�
   const lastMonth = shiftCalendarMonth(calendarMonth(todayJst()), -1);
   window.localStorage.setItem(
     "kakeibo.nyushukkin",
-    serializeStored([{ id: "past", kind: "支出", amount: 1200, date: `${lastMonth}-15`, memo: "" }]),
+    serializeStored([
+      { id: "past", kind: "支出", amount: 1200, date: `${lastMonth}-15`, memo: "" },
+    ]),
   );
   render(<Ledger />);
   expect(screen.getByText("この月の入出金はまだありません")).toBeDefined();

@@ -141,7 +141,10 @@ describe("removeNyushukkin / restoreNyushukkin", () => {
   });
 
   test("消した入出金を戻せる", () => {
-    expect(restoreNyushukkin([items[1]], items[0])).toEqual({ ok: true, value: [items[1], items[0]] });
+    expect(restoreNyushukkin([items[1]], items[0])).toEqual({
+      ok: true,
+      value: [items[1], items[0]],
+    });
   });
 
   test("空の帳簿にも戻せる", () => {

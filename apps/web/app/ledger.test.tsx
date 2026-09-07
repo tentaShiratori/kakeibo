@@ -82,9 +82,9 @@ test("収入を記録できる", async () => {
   fireEvent.change(screen.getByLabelText("金額"), { target: { value: "200000" } });
   fireEvent.click(screen.getByRole("button", { name: "記録する" }));
   expect(await screen.findByText(`${todayJst()} 収入 200,000円`)).toBeDefined();
-  expect(screen.getByText("収入", { selector: "dt" }).parentElement?.querySelector("dd")?.textContent).toBe(
-    "200,000円",
-  );
+  expect(
+    screen.getByText("収入", { selector: "dt" }).parentElement?.querySelector("dd")?.textContent,
+  ).toBe("200,000円");
 });
 
 test("同じ入出金を直せる", async () => {
@@ -202,7 +202,9 @@ test("他の月にだけ入出金があるときはこの月が空だと分か�
   const lastMonth = shiftCalendarMonth(calendarMonth(todayJst()), -1);
   window.localStorage.setItem(
     "kakeibo.nyushukkin",
-    serializeStored([{ id: "past", kind: "支出", amount: 1200, date: `${lastMonth}-15`, memo: "" }]),
+    serializeStored([
+      { id: "past", kind: "支出", amount: 1200, date: `${lastMonth}-15`, memo: "" },
+    ]),
   );
   render(<Ledger />);
   expect(screen.getByText("この月の入出金はまだありません")).toBeDefined();

@@ -99,7 +99,12 @@ function issueMessage(value: unknown): string {
   if (typeof first === "string") {
     return first;
   }
-  if (first && typeof first === "object" && "message" in first && typeof first.message === "string") {
+  if (
+    first &&
+    typeof first === "object" &&
+    "message" in first &&
+    typeof first.message === "string"
+  ) {
     return first.message;
   }
   return "";
@@ -131,7 +136,8 @@ function firstSubmitError(onSubmit: unknown): string {
   return "";
 }
 
-const inputClass = "rounded border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950";
+const inputClass =
+  "rounded border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950";
 
 export function Ledger() {
   const today = todayJst();

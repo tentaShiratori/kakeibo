@@ -1,0 +1,80 @@
+# 依存の自動更新。
+# マイナー / パッチは系統ごとにまとめ、CI が通ったら自動マージする。
+# メジャーは依存ごとに別 PR にし、自動マージしない。
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 10
+    groups:
+      lint:
+        patterns:
+          - "oxlint*"
+          - "oxfmt*"
+        update-types:
+          - "minor"
+          - "patch"
+      test:
+        patterns:
+          - "vitest*"
+          - "@vitest/*"
+          - "@testing-library/*"
+          - "jsdom"
+        update-types:
+          - "minor"
+          - "patch"
+      other-non-major:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "gomod"
+    directory: "/api"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 10
+    groups:
+      other-non-major:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "cargo"
+    directory: "/apps/app/src-tauri"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 10
+    groups:
+      other-non-major:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "Asia/Tokyo"
+    open-pull-requests-limit: 10
+    groups:
+      other-non-major:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"

@@ -7,14 +7,67 @@ alwaysApply: true
 
 - `apps/web` — Next.js 16（App Router）。コードを書く前に `apps/web/node_modules/next/dist/docs/` を読む
 - `apps/app` — Tauri + React + Vite
-- `api` — Go
+- `api` — Go。プロセス入口は `cmd/`。それ以外は `internal/`（`internals/` は置かない）
 - `packages` — 共有パッケージ置き場。今は空
 
 `apps/web` の各 `page.tsx` と同じフォルダに `_lib/` を置く。予約ファイルと、ルート `layout.tsx` が読む `globals.css` はセグメント直下。ページ用のコンポーネント・フック・純関数・テストは `_lib/`。子ルートは自分の `_lib` を持つ。
 
 予約ファイルは `page` / `layout` / `loading` / `error` / `not-found` / `route` / `template` / `default` / `global-error` と、icon などのメタデータファイル。`_` 始まりはルーティングに出ない。
 
-それ以外（`apps/app`、`api`）は既存ファイルの隣。domain / types などの層や `features/` は、その配置が既にあるときだけ使う。層を先に新設しない。
+`apps/app` は既存ファイルの隣。domain / types 層や `features/` は、その配置が既にあるときだけ使う。層を先に新設しない。
+
+# api の internal
+
+`api/internal` の構成は次が正。パッケージ名は葉フォルダ名。用語は CONTEXT.md のローマ字（例は `user` だが、入出金なら `nyushukkin`）。フォルダは使う関心事だけ作る。mysql / s3 / master_data は、その保存やマスタが要るときだけ。
+
+書く処理（作成・更新・削除）は `usecase`。読む処理は `query`。HTTP は `controller`。`cmd/server` は起動と組み立てだけ。
+
+```
+internal/
+  controller/
+    nyushukkin.go              # パッケージ名 controller
+  domain/
+    model/
+      user/                    # パッケージ名 user
+        entity.go
+        builder.go
+        spec.go
+      project/
+        project.go
+        entity.go
+        builder.go
+    master_data/
+      prefecture/              # パッケージ名 prefecture
+        prefecture_generated.go
+        prefecture.go
+  usecase/
+    app.go
+    create_user/
+      create_user.go
+    create_project/
+      create_project.go
+  query/
+    user_query/
+      get_by_id.go
+      search.go
+      get_by_company_id.go
+  infra/
+    mysql/
+    s3/
+    repository/
+      user_repository/
+        repository.go
+        search.go
+      company_repository/
+        repository.go
+        search.go
+        create.go
+  lib/
+    uuid_utils/
+      uuid_utils.go
+```
+
+usecase の `app.go` に書く口を置く。query は読む口だけを見る。controller は usecase と query を呼ぶ。usecase は子パッケージを import しない。
 
 # 名前
 
@@ -27,6 +80,7 @@ alwaysApply: true
 | 純関数・型 | `xxx.ts` | `app/_lib/nyushukkin.ts` |
 | テスト | 対象の隣に `*.test.ts` / `*.test.tsx` | `app/_lib/Ledger.test.tsx` |
 | Next.js の予約名 | フレームワークどおり小文字 | `page.tsx`, `layout.tsx` |
-| Go | 小文字。テストは `_test.go` | `main.go` |
+| Go（cmd） | 小文字。テストは `_test.go` | `main.go` |
+| Go（internal） | 上の構成どおり snake_case。テストは `_test.go` | `entity.go`, `nyushukkin.go` |
 | Rust | snake_case | `lib.rs` |
 | ADR | `NNNN-kebab-case.md` | `0001-one-household-ledger.md` |

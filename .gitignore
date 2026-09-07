@@ -44,6 +44,11 @@ wiki/
 # ローカルキャッシュ。解析結果の正は都度 `pnpm dead-code` で出す
 .fallow/
 
+# --- api の家計簿ファイル ---
+kakeibo.json
+kakeibo.json.bak
+kakeibo.json.tmp
+
 # --- lefthook ---
 # 個人の上書き。共有しない
 lefthook-local.yml

@@ -1,7 +1,27 @@
 package main
 
-import "fmt"
+import (
+	"log"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/tentaShiratori/kakeibo/api/internal/controller"
+	"github.com/tentaShiratori/kakeibo/api/internal/infra/repository/nyushukkin_repository"
+	"github.com/tentaShiratori/kakeibo/api/internal/lib/uuid_utils"
+	"github.com/tentaShiratori/kakeibo/api/internal/usecase"
+)
 
 func main() {
-	fmt.Println("Hello, World!")
+	path := os.Getenv("KAKEIBO_FILE")
+	if path == "" {
+		path = "kakeibo.json"
+	}
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	repo := nyushukkin_repository.New(path)
+	app := usecase.New(repo, time.Now, uuid_utils.New)
+	log.Fatal(http.ListenAndServe(":"+port, controller.NewNyushukkin(app, repo)))
 }

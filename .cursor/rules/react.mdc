@@ -1,0 +1,82 @@
+---
+description: React を関数型で書く（コンポーネントとカスタムフック）
+globs: apps/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# React
+
+判定・変換は純関数。コンポーネントは表示、カスタムフックは状態と副作用。web のページ用ファイルは `page.tsx` と同じ階層の `_lib/`。`features/` などの層は新設しない。名前は `architecture.mdc`。
+
+## コンポーネント
+
+`props → JSX`。関数宣言。クラスも、コンポーネント内のコンポーネント定義もしない。
+
+- `const` のみ。`let` 再代入や `for` で JSX を組み立てない。`map` と条件式
+- 表示用の派生値はレンダー中に求める。表示だけのために `useState` しない
+- `persist` / `localStorage` / `crypto.randomUUID` は呼ばない。出来事は上へ渡す
+- 再利用のためではなく、独立した状態とアクションで分ける。見た目のまとまりだけでは切らない
+- 一時的で頻繁に変わる状態は、それを使う子に置く。親へ上げない
+- 親は組み立てだけ。データの流れは親から一望する。運ぶだけの中間層は作らない
+- リストの一件など、実際に抽象になっている子は残してよい
+- 中身を差し替えるために Props を増やさない。囲いは `children` か `ReactNode`
+- バケツリレーや Context の前に、層を削るかコンポジションする
+
+## カスタムフック
+
+`入力 → いまの値と出来事を起こす関数`。名前は `useXxx`。
+
+- 画面ごとではなく、ひとまとまりの関心事（入出金の記録と更新）でまとめる
+- 戻り値はビューが使うデータと `onXxx`。入力欄の一時状態は持たない
+- 更新は `setState(prev => next)` か純関数の reducer。描画で閉じた古い値を書かない
+- updater / reducer の中で副作用を起こさない
+- `localStorage` や乱数 ID はカスタムフックか、それが呼ぶモジュール関数に閉じる
+
+```tsx
+// ❌ 中間層が運ぶだけ。入力中の状態まで親が持つ
+function LedgerBody({ amount, items, okSubmit, onOk }: Props) {
+  return (
+    <LedgerList items={items} amount={amount} okSubmit={okSubmit} onOk={onOk} />
+  );
+}
+
+// ✅ 帳簿はフック。入力はフォームに閉じる。親は組み立て
+export function useNyushukkin() {
+  const items = itemsFromSnapshot(
+    useSyncExternalStore(subscribe, snapshot, () => null),
+  );
+  function onRecord(input: NyushukkinInput) {
+    const recorded = recordNyushukkin(input, todayJst(), createId());
+    if (recorded.ok) persist(replaceNyushukkin(items, recorded.value));
+    return recorded;
+  }
+  return { items, onRecord };
+}
+
+export function Ledger() {
+  const { items, onRecord } = useNyushukkin();
+  return (
+    <>
+      <NyushukkinForm onRecord={onRecord} />
+      <ul>
+        {items.map((item) => (
+          <NyushukkinItem key={item.id} item={item} />
+        ))}
+      </ul>
+    </>
+  );
+}
+
+function NyushukkinForm({
+  onRecord,
+}: {
+  onRecord: (input: NyushukkinInput) => NyushukkinResult<Nyushukkin>;
+}) {
+  const [input, setInput] = useState(emptyInput(todayJst()));
+  return <form onSubmit={() => onRecord(input)} />;
+}
+
+function Actions({ children }: { children: ReactNode }) {
+  return <div className="flex gap-3">{children}</div>;
+}
+```

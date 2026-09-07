@@ -7,17 +7,23 @@ const loopCount = input.loop_count ?? 0;
 
 const root = repoRoot();
 const turbo = join(root, "node_modules", "turbo", "bin", "turbo");
-const result = spawnSync(process.execPath, [turbo, "typecheck"], {
-  cwd: root,
-  encoding: "utf8",
-  windowsHide: true,
-});
+const result = spawnSync(
+  process.execPath,
+  [turbo, "lint", "fmt:check", "typecheck", "test"],
+  {
+    cwd: root,
+    encoding: "utf8",
+    windowsHide: true,
+  },
+);
 
-const output = `${result.stdout ?? ""}${result.stderr ?? ""}`.replaceAll("\r\n", "\n").trim();
+const output = `${result.stdout ?? ""}${result.stderr ?? ""}`
+  .replaceAll("\r\n", "\n")
+  .trim();
 
 if (result.status !== 0 && loopCount < 3) {
   writeJson({
-    followup_message: `Typecheck failed:\n${output.slice(0, 4000)}\n型エラーを修正してください。全テストは実行しない。`,
+    followup_message: `Check failed:\n${output.slice(0, 4000)}\nエラーを修正してください。`,
   });
 } else {
   writeJson({});

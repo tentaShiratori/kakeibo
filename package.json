@@ -9,6 +9,7 @@
     "fmt:check": "oxfmt --check",
     "clean": "turbo clean",
     "typecheck": "turbo typecheck",
+    "test": "turbo run test -- --run",
     "tauri": "pnpm --filter @kakeibo/app tauri"
   },
   "devDependencies": {

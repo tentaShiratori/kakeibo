@@ -9,7 +9,7 @@ const root = repoRoot();
 const turbo = join(root, "node_modules", "turbo", "bin", "turbo");
 const result = spawnSync(
   process.execPath,
-  [turbo, "lint", "fmt:check", "typecheck", "test"],
+  [turbo, "lint", "fmt:check", "typecheck", "test:run"],
   {
     cwd: root,
     encoding: "utf8",

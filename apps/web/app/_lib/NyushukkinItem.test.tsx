@@ -1,5 +1,6 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, screen } from "@testing-library/react";
 import { afterEach, expect, test } from "vitest";
+import { renderApp } from "../../test/renderApp";
 import { NyushukkinItem } from "./NyushukkinItem";
 
 afterEach(() => {
@@ -7,7 +8,7 @@ afterEach(() => {
 });
 
 test("日付と種類と金額を出す", () => {
-  render(
+  renderApp(
     <ul>
       <NyushukkinItem item={{ id: "a", kind: "支出", amount: 5000, date: "2026-09-07", memo: "" }}>
         操作
@@ -19,7 +20,7 @@ test("日付と種類と金額を出す", () => {
 });
 
 test("メモがあれば出す", () => {
-  render(
+  renderApp(
     <ul>
       <NyushukkinItem
         item={{ id: "a", kind: "収入", amount: 100, date: "2026-09-01", memo: "給料" }}
@@ -32,7 +33,7 @@ test("メモがあれば出す", () => {
 });
 
 test("メモが空なら出さない", () => {
-  render(
+  renderApp(
     <ul>
       <NyushukkinItem item={{ id: "a", kind: "支出", amount: 1, date: "2026-09-07", memo: "" }}>
         操作

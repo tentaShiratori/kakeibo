@@ -42,7 +42,8 @@
 - 2026-09-07: web はブラウザ保存のまま。api への接続、正本の移動、戻す、収支専用の口、DB、枠、app、口座間の移動はまだ開かない
 - 2026-09-07: デザインシステムは簡易。トークンは globals.css、部品は Button と Field を app/_lib に置く。packages は新設しない
 - 2026-09-07: afterFileEdit フックは stdin の BOM を除いてから JSON を読む。Windows で Cursor が BOM を付けると format.ts が落ちていた
-- 2026-09-07: web のテスト描画は `apps/web/test/renderApp`。Provider は `AppProviders` に足す。既存テストの移行はまだ
+- 2026-09-07: web のテスト描画は `apps/web/test/renderApp`。Provider は `AppProviders` に足す。コンポーネントテストの `render` は `renderApp` に置き換えた。`renderHook` はそのまま
+- 2026-09-07: turbo の一括テストは `test:run`。パッケージの `test` は vitest（`pnpm test run {ファイル}` 用）。ルートの `pnpm test` は `turbo run test:run`
 
 ## 次のセッションで対応すること
 

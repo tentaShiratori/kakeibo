@@ -1,5 +1,6 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
+import { renderApp } from "../../test/renderApp";
 import { NyushukkinForm } from "./NyushukkinForm";
 import {
   todayJst,
@@ -38,7 +39,7 @@ function renderForm(
   );
   const onCancel = vi.fn<() => void>(props.onCancel ?? (() => {}));
   const onSaved = vi.fn<(item: Nyushukkin) => void>(props.onSaved ?? (() => {}));
-  render(
+  renderApp(
     <NyushukkinForm
       editing={props.editing ?? null}
       onRecord={onRecord}

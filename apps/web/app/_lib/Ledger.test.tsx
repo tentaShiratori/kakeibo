@@ -1,7 +1,7 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { createStore, Provider } from "jotai";
-import type { ReactNode } from "react";
 import { afterEach, beforeEach, expect, test } from "vitest";
+import { renderApp } from "../../test/renderApp";
 import { Ledger } from "./Ledger";
 import { calendarMonth, formatCalendarMonth, shiftCalendarMonth, todayJst } from "./nyushukkin";
 import { serializeStored } from "./stored";
@@ -16,7 +16,7 @@ beforeEach(() => {
 
 function renderLedger() {
   const store = createStore();
-  return render(
+  return renderApp(
     <Provider store={store}>
       <Ledger />
     </Provider>,

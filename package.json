@@ -11,7 +11,8 @@
     "dead-code": "fallow dead-code && fallow dead-code --production",
     "clean": "turbo clean",
     "typecheck": "turbo typecheck",
-    "test": "turbo run test -- --run",
+    "test": "turbo run test",
+    "test:run": "turbo run test:run",
     "tauri": "pnpm --filter @kakeibo/app tauri"
   },
   "devDependencies": {

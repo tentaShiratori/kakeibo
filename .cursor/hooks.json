@@ -25,7 +25,7 @@
     ],
     "stop": [
       {
-        "command": "node .cursor/hooks/typecheck-stop.ts",
+        "command": "node .cursor/hooks/stop.ts",
         "timeout": 60,
         "loop_limit": 3
       }

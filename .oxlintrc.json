@@ -1,0 +1,6 @@
+{
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "react", "jsx-a11y", "import", "vitest"],
+  "rules": {
+    "max-lines": ["error", { "max": 200 }]
+  }
+}

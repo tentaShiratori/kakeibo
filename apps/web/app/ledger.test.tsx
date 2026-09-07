@@ -33,6 +33,16 @@ test("壊れた保存はひとつ前の帳簿を出す", () => {
   expect(screen.getByText(`${today} 支出 5,000円`)).toBeDefined();
 });
 
+test("初めての記録が壊れても残る", () => {
+  render(<Ledger />);
+  fireEvent.change(screen.getByLabelText("金額"), { target: { value: "5000" } });
+  fireEvent.click(screen.getByRole("button", { name: "記録する" }));
+  window.localStorage.setItem("kakeibo.nyushukkin", "nope");
+  cleanup();
+  render(<Ledger />);
+  expect(screen.getByText(`${todayJst()} 支出 5,000円`)).toBeDefined();
+});
+
 test("金額と入出日で支出を記録できる", () => {
   render(<Ledger />);
   fireEvent.change(screen.getByLabelText("金額"), { target: { value: "5000" } });

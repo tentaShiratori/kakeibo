@@ -43,10 +43,14 @@ function snapshot() {
 
 function persist(items: Nyushukkin[]) {
   const current = window.localStorage.getItem(storageKey);
+  const next = serializeStored(items);
   if (current !== null && readStored(current).ok) {
     window.localStorage.setItem(backupKey, current);
   }
-  window.localStorage.setItem(storageKey, serializeStored(items));
+  window.localStorage.setItem(storageKey, next);
+  if (window.localStorage.getItem(backupKey) === null) {
+    window.localStorage.setItem(backupKey, next);
+  }
   for (const listener of listeners) {
     listener();
   }

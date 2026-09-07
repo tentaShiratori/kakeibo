@@ -4,19 +4,21 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"time"
 
-	"github.com/tentaShiratori/kakeibo/api/internal/domain/model"
+	"github.com/tentaShiratori/kakeibo/api/internal/domain/model/nyushukkin"
+	"github.com/tentaShiratori/kakeibo/api/internal/query/nyushukkin_query"
+	"github.com/tentaShiratori/kakeibo/api/internal/usecase"
+	"github.com/tentaShiratori/kakeibo/api/internal/usecase/correct_nyushukkin"
+	"github.com/tentaShiratori/kakeibo/api/internal/usecase/record_nyushukkin"
+	"github.com/tentaShiratori/kakeibo/api/internal/usecase/remove_nyushukkin"
 )
 
 type server struct {
-	book  *Kakeibo
-	now   func() time.Time
-	newID func() string
+	app usecase.App
 }
 
-func newServer(book *Kakeibo, now func() time.Time, newID func() string) http.Handler {
-	s := &server{book: book, now: now, newID: newID}
+func newServer(app usecase.App) http.Handler {
+	s := &server{app: app}
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /nyushukkin", s.record)
 	mux.HandleFunc("GET /nyushukkin", s.list)
@@ -31,70 +33,65 @@ func (s *server) record(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	item, err := model.RecordNyushukkin(input, model.TodayJST(s.now()), s.newID())
+	item, err := record_nyushukkin.RecordNyushukkin(s.app, input)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	if err := s.book.Record(item); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeUsecaseError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, item)
 }
 
 func (s *server) correct(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
 	input, err := decodeInput(r)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	current := model.Nyushukkin{ID: id}
-	item, err := model.CorrectNyushukkin(current, input, model.TodayJST(s.now()))
+	item, err := correct_nyushukkin.CorrectNyushukkin(s.app, r.PathValue("id"), input)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	if err := s.book.Correct(item); err != nil {
-		writeBookError(w, err)
+		writeUsecaseError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, item)
 }
 
 func (s *server) remove(w http.ResponseWriter, r *http.Request) {
-	removed, err := s.book.Remove(r.PathValue("id"))
+	removed, err := remove_nyushukkin.RemoveNyushukkin(s.app, r.PathValue("id"))
 	if err != nil {
-		writeBookError(w, err)
+		writeUsecaseError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, removed)
 }
 
 func (s *server) list(w http.ResponseWriter, r *http.Request) {
-	month, err := model.ParseMonth(r.URL.Query().Get("month"))
+	items, err := nyushukkin_query.ListByMonth(s.app.Nyushukkin, r.URL.Query().Get("month"))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, s.book.List(month))
+	writeJSON(w, http.StatusOK, items)
 }
 
-func decodeInput(r *http.Request) (model.NyushukkinInput, error) {
+func decodeInput(r *http.Request) (nyushukkin.Input, error) {
 	defer r.Body.Close()
 	dec := json.NewDecoder(r.Body)
 	dec.UseNumber()
-	var input model.NyushukkinInput
+	var input nyushukkin.Input
 	if err := dec.Decode(&input); err != nil {
-		return model.NyushukkinInput{}, errors.New("入力が読めません")
+		return nyushukkin.Input{}, errors.New("入力が読めません")
 	}
 	return input, nil
 }
 
-func writeBookError(w http.ResponseWriter, err error) {
-	if errors.Is(err, model.ErrNotFound) {
+func writeUsecaseError(w http.ResponseWriter, err error) {
+	if errors.Is(err, nyushukkin.ErrNotFound) {
 		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	switch err.Error() {
+	case nyushukkin.KindError, nyushukkin.AmountError, nyushukkin.DateError, nyushukkin.MonthError, nyushukkin.MonthFormat:
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	writeError(w, http.StatusInternalServerError, err.Error())

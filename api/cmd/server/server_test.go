@@ -11,11 +11,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tentaShiratori/kakeibo/api/internal/domain/model"
+	"github.com/tentaShiratori/kakeibo/api/internal/domain/model/nyushukkin"
+	"github.com/tentaShiratori/kakeibo/api/internal/infra/repository/nyushukkin_repository"
+	"github.com/tentaShiratori/kakeibo/api/internal/lib/uuid_utils"
+	"github.com/tentaShiratori/kakeibo/api/internal/usecase"
 )
 
 func TestServerNyushukkin(t *testing.T) {
-	ts, _ := testServer(t)
+	ts := testServer(t)
 	created := postNyushukkin(t, ts, `{"kind":"支出","amount":5000,"date":"2026-09-06","memo":"米"}`, http.StatusCreated)
 	if created.ID == "" || created.Amount != 5000 || created.Kind != "支出" || created.Memo != "米" {
 		t.Fatalf("created %+v", created)
@@ -53,16 +56,17 @@ func TestServerNyushukkin(t *testing.T) {
 func TestServerRestartKeepsBook(t *testing.T) {
 	now := mustTime("2026-09-06T12:00:00+09:00")
 	path := filepath.Join(t.TempDir(), "kakeibo.json")
-	book := OpenKakeibo(path)
 	ids := 0
-	ts := httptest.NewServer(newServer(book, func() time.Time { return now }, func() string {
+	newID := func() string {
 		ids++
 		return fmt.Sprintf("id-%d", ids)
-	}))
+	}
+	app := usecase.New(nyushukkin_repository.New(path), func() time.Time { return now }, newID)
+	ts := httptest.NewServer(newServer(app))
 	created := postNyushukkin(t, ts, `{"kind":"支出","amount":1,"date":"2026-09-06","memo":""}`, http.StatusCreated)
 	ts.Close()
 
-	reopened := httptest.NewServer(newServer(OpenKakeibo(path), func() time.Time { return now }, newID))
+	reopened := httptest.NewServer(newServer(usecase.New(nyushukkin_repository.New(path), func() time.Time { return now }, uuid_utils.New)))
 	t.Cleanup(reopened.Close)
 	got := listNyushukkin(t, reopened, "2026-09", http.StatusOK)
 	if len(got) != 1 || got[0] != created {
@@ -71,18 +75,18 @@ func TestServerRestartKeepsBook(t *testing.T) {
 }
 
 func TestServerValidation(t *testing.T) {
-	ts, _ := testServer(t)
+	ts := testServer(t)
 	cases := []struct {
 		name   string
 		body   string
 		status int
 		err    string
 	}{
-		{"種類が違う", `{"kind":"取引","amount":1,"date":"2026-09-06","memo":""}`, http.StatusBadRequest, model.KindError},
-		{"0円", `{"kind":"支出","amount":0,"date":"2026-09-06","memo":""}`, http.StatusBadRequest, model.AmountError},
-		{"小数", `{"kind":"支出","amount":1.5,"date":"2026-09-06","memo":""}`, http.StatusBadRequest, model.AmountError},
-		{"明日", `{"kind":"支出","amount":1,"date":"2026-09-07","memo":""}`, http.StatusBadRequest, model.DateError},
-		{"存在しない日", `{"kind":"支出","amount":1,"date":"2026-02-31","memo":""}`, http.StatusBadRequest, model.DateError},
+		{"種類が違う", `{"kind":"取引","amount":1,"date":"2026-09-06","memo":""}`, http.StatusBadRequest, nyushukkin.KindError},
+		{"0円", `{"kind":"支出","amount":0,"date":"2026-09-06","memo":""}`, http.StatusBadRequest, nyushukkin.AmountError},
+		{"小数", `{"kind":"支出","amount":1.5,"date":"2026-09-06","memo":""}`, http.StatusBadRequest, nyushukkin.AmountError},
+		{"明日", `{"kind":"支出","amount":1,"date":"2026-09-07","memo":""}`, http.StatusBadRequest, nyushukkin.DateError},
+		{"存在しない日", `{"kind":"支出","amount":1,"date":"2026-02-31","memo":""}`, http.StatusBadRequest, nyushukkin.DateError},
 		{"読めないJSON", `{`, http.StatusBadRequest, "入力が読めません"},
 	}
 	for _, tc := range cases {
@@ -94,16 +98,16 @@ func TestServerValidation(t *testing.T) {
 }
 
 func TestServerNotFoundAndMonth(t *testing.T) {
-	ts, _ := testServer(t)
+	ts := testServer(t)
 	_, body := doJSON(t, ts, http.MethodPut, "/nyushukkin/missing", `{"kind":"支出","amount":1,"date":"2026-09-06","memo":""}`, http.StatusNotFound)
-	assertError(t, body, model.NotFound)
+	assertError(t, body, nyushukkin.NotFound)
 	_, body = doJSON(t, ts, http.MethodDelete, "/nyushukkin/missing", "", http.StatusNotFound)
-	assertError(t, body, model.NotFound)
+	assertError(t, body, nyushukkin.NotFound)
 
 	_, body = doJSON(t, ts, http.MethodGet, "/nyushukkin", "", http.StatusBadRequest)
-	assertError(t, body, model.MonthError)
+	assertError(t, body, nyushukkin.MonthError)
 	_, body = doJSON(t, ts, http.MethodGet, "/nyushukkin?month=2026-13", "", http.StatusBadRequest)
-	assertError(t, body, model.MonthFormat)
+	assertError(t, body, nyushukkin.MonthFormat)
 
 	empty := listNyushukkin(t, ts, "2026-07", http.StatusOK)
 	if empty == nil || len(empty) != 0 {
@@ -111,69 +115,69 @@ func TestServerNotFoundAndMonth(t *testing.T) {
 	}
 
 	_, body = doJSON(t, ts, http.MethodPost, "/nyushukkin", `{"kind":"支出","amount":9007199254740991,"date":"2026-09-06","memo":""}`, http.StatusCreated)
-	var maxItem model.Nyushukkin
-	if err := json.Unmarshal(body, &maxItem); err != nil || maxItem.Amount != model.MaxSafe {
+	var maxItem nyushukkin.Nyushukkin
+	if err := json.Unmarshal(body, &maxItem); err != nil || maxItem.Amount != nyushukkin.MaxSafe {
 		t.Fatalf("max safe %+v %s", maxItem, body)
 	}
 	_, body = doJSON(t, ts, http.MethodPost, "/nyushukkin", `{"kind":"支出","amount":9007199254740992,"date":"2026-09-06","memo":""}`, http.StatusBadRequest)
-	assertError(t, body, model.AmountError)
+	assertError(t, body, nyushukkin.AmountError)
 }
 
 func TestServerAssignsID(t *testing.T) {
-	ts, _ := testServer(t)
+	ts := testServer(t)
 	created := postNyushukkin(t, ts, `{"id":"client","kind":"支出","amount":1,"date":"2026-09-06","memo":""}`, http.StatusCreated)
 	if created.ID == "client" || created.ID == "" {
 		t.Fatalf("api should assign id, got %q", created.ID)
 	}
 }
 
-func testServer(t *testing.T) (*httptest.Server, *Kakeibo) {
+func testServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	now := mustTime("2026-09-06T12:00:00+09:00")
-	book := OpenKakeibo(filepath.Join(t.TempDir(), "kakeibo.json"))
 	n := 0
-	ts := httptest.NewServer(newServer(book, func() time.Time { return now }, func() string {
+	app := usecase.New(nyushukkin_repository.New(filepath.Join(t.TempDir(), "kakeibo.json")), func() time.Time { return now }, func() string {
 		n++
 		return fmt.Sprintf("id-%d", n)
-	}))
+	})
+	ts := httptest.NewServer(newServer(app))
 	t.Cleanup(ts.Close)
-	return ts, book
+	return ts
 }
 
-func postNyushukkin(t *testing.T, ts *httptest.Server, body string, status int) model.Nyushukkin {
+func postNyushukkin(t *testing.T, ts *httptest.Server, body string, status int) nyushukkin.Nyushukkin {
 	t.Helper()
 	_, raw := doJSON(t, ts, http.MethodPost, "/nyushukkin", body, status)
-	var item model.Nyushukkin
+	var item nyushukkin.Nyushukkin
 	if err := json.Unmarshal(raw, &item); err != nil {
 		t.Fatal(err)
 	}
 	return item
 }
 
-func putNyushukkin(t *testing.T, ts *httptest.Server, id, body string, status int) model.Nyushukkin {
+func putNyushukkin(t *testing.T, ts *httptest.Server, id, body string, status int) nyushukkin.Nyushukkin {
 	t.Helper()
 	_, raw := doJSON(t, ts, http.MethodPut, "/nyushukkin/"+id, body, status)
-	var item model.Nyushukkin
+	var item nyushukkin.Nyushukkin
 	if err := json.Unmarshal(raw, &item); err != nil {
 		t.Fatal(err)
 	}
 	return item
 }
 
-func deleteNyushukkin(t *testing.T, ts *httptest.Server, id string, status int) model.Nyushukkin {
+func deleteNyushukkin(t *testing.T, ts *httptest.Server, id string, status int) nyushukkin.Nyushukkin {
 	t.Helper()
 	_, raw := doJSON(t, ts, http.MethodDelete, "/nyushukkin/"+id, "", status)
-	var item model.Nyushukkin
+	var item nyushukkin.Nyushukkin
 	if err := json.Unmarshal(raw, &item); err != nil {
 		t.Fatal(err)
 	}
 	return item
 }
 
-func listNyushukkin(t *testing.T, ts *httptest.Server, month string, status int) []model.Nyushukkin {
+func listNyushukkin(t *testing.T, ts *httptest.Server, month string, status int) []nyushukkin.Nyushukkin {
 	t.Helper()
 	_, raw := doJSON(t, ts, http.MethodGet, "/nyushukkin?month="+month, "", status)
-	var items []model.Nyushukkin
+	var items []nyushukkin.Nyushukkin
 	if err := json.Unmarshal(raw, &items); err != nil {
 		t.Fatal(err)
 	}

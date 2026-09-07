@@ -1,6 +1,6 @@
 ## 現在の状態
 
-- 実装済み: apps/web の入出金記録（金額・入出日・メモ、直す・消す、戻す、暦月の収支と一覧、壊れた保存のひとつ前）、ドメイン（CONTEXT.md / ADR-0001〜0013）、oxlint / oxfmt / vitest、apps/app 初期テンプレ、api Hello World、GitHub の issue / PR テンプレート、Dependabot の週次更新、PR / main の CI
+- 実装済み: apps/web の入出金記録（金額・入出日・メモ、直す・消す、戻す、暦月の収支と一覧、壊れた保存のひとつ前）、ドメイン（CONTEXT.md / ADR-0001〜0013）、oxlint / oxfmt / vitest、apps/app 初期テンプレ、api Hello World、GitHub の issue / PR テンプレート、Dependabot の週次更新、PR / main の CI、Dependabot の minor / patch は CI 通過後に自動マージ
 - 作業中: なし
 - 未着手: 枠の名前、入出金の API / app 側、端末をまたぐ同じ一冊
 
@@ -30,6 +30,7 @@
 - 2026-09-07: PMは降りる。既存PRを完成させて止める
 - 2026-09-07: GitHub の issue は不具合と機能のフォーム、PR は `.github/PULL_REQUEST_TEMPLATE.md` の単一テンプレート。空の issue も残す
 - 2026-09-07: 依存の自動更新は Dependabot（Renovate はアプリ追加が要るので見送り）。npm / gomod / cargo / github-actions を週次。lint・test とその他の非メジャーをグループ化。メジャーは別 PR。自動マージはしない
+- 2026-09-07: Dependabot の minor / patch は CI 成功後に squash マージする。major は触らない。リポジトリの Allow auto-merge はオフなので、workflow_run で CI 完了を待ってから gh pr merge する
 - 2026-09-07: PR と main の push で GitHub Actions を回す。JS は pnpm lint / fmt:check / typecheck / test。Go は gofmt -l と go test。ツールのバージョンは mise.toml。turbo に test を足した。CI ではパッケージのテストを全部回す
 - 2026-09-07: web の typecheck は `next typegen` のあと `tsc`。LayoutProps は生成型なので、クリーンな CI では typegen が要る
 

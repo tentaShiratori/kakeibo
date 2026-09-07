@@ -31,6 +31,7 @@
 - 2026-09-07: GitHub の issue は不具合と機能のフォーム、PR は `.github/PULL_REQUEST_TEMPLATE.md` の単一テンプレート。空の issue も残す
 - 2026-09-07: 依存の自動更新は Dependabot（Renovate はアプリ追加が要るので見送り）。npm / gomod / cargo / github-actions を週次。lint・test とその他の非メジャーをグループ化。メジャーは別 PR。自動マージはしない
 - 2026-09-07: PR と main の push で GitHub Actions を回す。JS は pnpm lint / fmt:check / typecheck / test。Go は gofmt -l と go test。ツールのバージョンは mise.toml。turbo に test を足した。CI ではパッケージのテストを全部回す
+- 2026-09-07: web の typecheck は `next typegen` のあと `tsc`。LayoutProps は生成型なので、クリーンな CI では typegen が要る
 
 ## 次のセッションで対応すること
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "./Button";
 import { NyushukkinForm } from "./NyushukkinForm";
 import { NyushukkinItem } from "./NyushukkinItem";
 import {
@@ -32,36 +33,31 @@ export function Ledger() {
     <div className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-8 px-4 py-10">
       <header className="flex flex-col gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">家計簿</h1>
-        <div className="flex items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
-          <button
-            className="underline"
-            type="button"
-            onClick={() => setMonth(shiftCalendarMonth(month, -1))}
-          >
+        <div className="flex items-center gap-3 text-sm text-muted">
+          <Button variant="ghost" onClick={() => setMonth(shiftCalendarMonth(month, -1))}>
             前の月
-          </button>
+          </Button>
           <p>{formatCalendarMonth(month)}の収支</p>
-          <button
-            className="underline disabled:text-zinc-400 disabled:no-underline dark:disabled:text-zinc-600"
-            type="button"
+          <Button
+            variant="ghost"
             disabled={!canShowNextMonth}
             onClick={() => setMonth(shiftCalendarMonth(month, 1))}
           >
             次の月
-          </button>
+          </Button>
         </div>
         <dl className="grid grid-cols-3 gap-3 text-sm">
           <div>
-            <dt className="text-zinc-500">収入</dt>
-            <dd className="font-medium">{yen(totals.income)}</dd>
+            <dt className="text-muted">収入</dt>
+            <dd className="font-medium tabular-nums text-income">{yen(totals.income)}</dd>
           </div>
           <div>
-            <dt className="text-zinc-500">支出</dt>
-            <dd className="font-medium">{yen(totals.expense)}</dd>
+            <dt className="text-muted">支出</dt>
+            <dd className="font-medium tabular-nums text-expense">{yen(totals.expense)}</dd>
           </div>
           <div>
-            <dt className="text-zinc-500">収支</dt>
-            <dd className="font-medium">{yen(totals.balance)}</dd>
+            <dt className="text-muted">収支</dt>
+            <dd className="font-medium tabular-nums">{yen(totals.balance)}</dd>
           </div>
         </dl>
       </header>
@@ -82,7 +78,7 @@ export function Ledger() {
         }}
       />
       {error ? (
-        <p className="text-sm text-red-700 dark:text-red-400" role="alert">
+        <p className="text-sm text-danger" role="alert">
           {error}
         </p>
       ) : null}
@@ -90,9 +86,9 @@ export function Ledger() {
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-medium">入出金</h2>
         {removed ? (
-          <button
-            className="self-start text-sm underline"
-            type="button"
+          <Button
+            className="self-start"
+            variant="ghost"
             onClick={() => {
               const restored = onRestore();
               if (!restored.ok) {
@@ -104,22 +100,21 @@ export function Ledger() {
             }}
           >
             消した入出金を戻す
-          </button>
+          </Button>
         ) : null}
         {listed.length === 0 ? (
-          <p className="text-sm text-zinc-500">
+          <p className="text-sm text-muted">
             {items.length === 0 ? "まだ入出金がありません" : "この月の入出金はまだありません"}
           </p>
         ) : (
-          <ul className="flex flex-col divide-y divide-zinc-200 dark:divide-zinc-800">
+          <ul className="flex flex-col divide-y divide-border">
             {listed.map((item) => (
               <NyushukkinItem key={item.id} item={item}>
-                <button className="underline" type="button" onClick={() => setEditing(item)}>
+                <Button variant="ghost" onClick={() => setEditing(item)}>
                   直す
-                </button>
-                <button
-                  className="underline"
-                  type="button"
+                </Button>
+                <Button
+                  variant="ghost"
                   onClick={() => {
                     const next = onRemove(item.id);
                     if (!next.ok) {
@@ -133,7 +128,7 @@ export function Ledger() {
                   }}
                 >
                   消す
-                </button>
+                </Button>
               </NyushukkinItem>
             ))}
           </ul>

@@ -48,3 +48,8 @@ wiki/
 kakeibo.json
 kakeibo.json.bak
 kakeibo.json.tmp
+
+# --- lefthook ---
+# 個人の上書き。共有しない
+lefthook-local.yml
+lefthook-local.yaml

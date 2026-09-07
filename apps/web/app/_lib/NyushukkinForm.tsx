@@ -2,6 +2,8 @@
 
 import { useForm } from "@tanstack/react-form";
 import { useRef, useState } from "react";
+import { Button } from "./Button";
+import { Field, TextInput } from "./Field";
 import { emptyInput, firstSubmitError, valuesFromEditing } from "./formInput";
 import {
   kinds,
@@ -11,9 +13,6 @@ import {
   type NyushukkinInput,
   type NyushukkinResult,
 } from "./nyushukkin";
-
-const inputClass =
-  "rounded border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950";
 
 export function NyushukkinForm({
   editing,
@@ -66,28 +65,24 @@ export function NyushukkinForm({
     >
       <form.Field name="amount">
         {(field) => (
-          <label className="flex flex-col gap-1 text-sm" htmlFor="nyushukkin-amount">
-            金額
-            <input
+          <Field label="金額" htmlFor="nyushukkin-amount">
+            <TextInput
               ref={amountRef}
               id="nyushukkin-amount"
-              className={inputClass}
               inputMode="numeric"
               name={field.name}
               value={field.state.value}
               onBlur={field.handleBlur}
               onChange={(event) => field.handleChange(event.target.value)}
             />
-          </label>
+          </Field>
         )}
       </form.Field>
       <form.Field name="date">
         {(field) => (
-          <label className="flex flex-col gap-1 text-sm" htmlFor="nyushukkin-date">
-            入出日
-            <input
+          <Field label="入出日" htmlFor="nyushukkin-date">
+            <TextInput
               id="nyushukkin-date"
-              className={inputClass}
               type="date"
               name={field.name}
               max={today}
@@ -95,7 +90,7 @@ export function NyushukkinForm({
               onBlur={field.handleBlur}
               onChange={(event) => field.handleChange(event.target.value)}
             />
-          </label>
+          </Field>
         )}
       </form.Field>
       <form.Field name="kind">
@@ -120,42 +115,34 @@ export function NyushukkinForm({
       </form.Field>
       <form.Field name="memo">
         {(field) => (
-          <label className="flex flex-col gap-1 text-sm" htmlFor="nyushukkin-memo">
-            メモ
-            <input
+          <Field label="メモ" htmlFor="nyushukkin-memo">
+            <TextInput
               id="nyushukkin-memo"
-              className={inputClass}
               name={field.name}
               value={field.state.value}
               onBlur={field.handleBlur}
               onChange={(event) => field.handleChange(event.target.value)}
             />
-          </label>
+          </Field>
         )}
       </form.Field>
       {error ? (
-        <p className="text-sm text-red-700 dark:text-red-400" role="alert">
+        <p className="text-sm text-danger" role="alert">
           {error}
         </p>
       ) : null}
       <div className="flex gap-3">
-        <button
-          className="rounded bg-zinc-900 px-4 py-2 text-sm text-white dark:bg-zinc-100 dark:text-zinc-900"
-          type="submit"
-        >
-          {editing ? "この入出金を直す" : "記録する"}
-        </button>
+        <Button type="submit">{editing ? "この入出金を直す" : "記録する"}</Button>
         {editing ? (
-          <button
-            className="text-sm underline"
-            type="button"
+          <Button
+            variant="ghost"
             onClick={() => {
               onCancel();
               amountRef.current?.focus();
             }}
           >
             やめる
-          </button>
+          </Button>
         ) : null}
       </div>
     </form>

@@ -11,14 +11,14 @@
       "dependsOn": ["^lint"]
     },
     "fmt": {
-      "cache": false
+      "dependsOn": ["^lint"]
     },
     "fmt:check": {},
     "typecheck": {
       "dependsOn": ["^typecheck"]
     },
-    "test": {
-      "dependsOn": ["^test"]
+    "test:run": {
+      "dependsOn": ["^test:run"]
     },
     "dev": {
       "cache": false,

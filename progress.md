@@ -1,6 +1,6 @@
 ## 現在の状態
 
-- 実装済み: apps/web の入出金記録（金額・入出日・メモ、直す・消す、戻す、暦月の収支と一覧、壊れた保存のひとつ前）、Jotai の atomWithStorage によるブラウザ保存、TanStack Form と Valibot による入力検証、ドメイン（CONTEXT.md / ADR-0001〜0013）、oxlint / oxfmt / vitest、apps/app 初期テンプレ、api の入出金（記録・直す・消す・暦月の一覧、ファイル一冊、認証なし）、GitHub の issue / PR テンプレート、Dependabot の週次更新、PR / main の CI、Dependabot の minor / patch は CI 通過後に自動マージ、fallow による不要コード検査
+- 実装済み: apps/web の入出金記録（金額・入出日・メモ、直す・消す、戻す、暦月の収支と一覧、壊れた保存のひとつ前）、Jotai の atomWithStorage によるブラウザ保存、TanStack Form と Valibot による入力検証、web の簡易デザインシステム（globals.css のトークンと Button / Field）、web のテスト描画は `test/renderApp`、ドメイン（CONTEXT.md / ADR-0001〜0013）、oxlint / oxfmt / vitest、apps/app 初期テンプレ、api の入出金（記録・直す・消す・暦月の一覧、ファイル一冊、認証なし）、GitHub の issue / PR テンプレート、Dependabot の週次更新、PR / main の CI、Dependabot の minor / patch は CI 通過後に自動マージ、fallow による不要コード検査、lefthook によるコミット前の oxfmt / oxlint / gofmt（#5）
 - 作業中: なし
 - 未着手: 枠の名前、web から api への接続、apps/app の入出金、端末をまたぐ同じ一冊
 
@@ -40,6 +40,12 @@
 - 2026-09-07: 不要コードは fallow。テスト専用の export は本番に置かない。CI は `fallow dead-code` と `--production` の両方。`skills` は CLI なので ignore。warn 系は advisory のまま
 - 2026-09-07: api の入出金は web と同じ形（収入または支出、金額、入出日、メモ）。id は api が付ける。保存はプロセスに一冊のファイル。web の正本はまだブラウザ。認証も DB も枠もやらない
 - 2026-09-07: api は `internal/`（`internals/` は置かない）。書く処理は usecase、読む処理は query、HTTP は controller。cmd/server は起動と組み立てだけ
+- 2026-09-07: デザインシステムは簡易。トークンは globals.css、部品は Button と Field を app/_lib に置く。packages は新設しない
+- 2026-09-07: afterFileEdit フックは stdin の BOM を除いてから JSON を読む。Windows で Cursor が BOM を付けると format.ts が落ちていた
+- 2026-09-07: web のテスト描画は `apps/web/test/renderApp`。Provider は `AppProviders` に足す。コンポーネントテストの `render` は `renderApp` に置き換えた。`renderHook` はそのまま
+- 2026-09-07: turbo の一括テストは `test:run`。パッケージの `test` は vitest（`pnpm test run {ファイル}` 用）。ルートの `pnpm test` は `turbo run test:run`
+- 2026-09-07: lefthook の pre-commit は触ったファイルの oxfmt / oxlint（Go なら gofmt）だけ。typecheck とテストは CI。husky / lint-staged は入れない。oxlint は apps/web と apps/app の cwd で回し、パッケージの設定を使う
+- 2026-09-07: lefthook install は mise の postinstall hook が実行する。README に手で lefthook install とは書かない。lefthook が PATH にない環境（CI の部分 install）ではスキップする
 
 ## 次のセッションで対応すること
 

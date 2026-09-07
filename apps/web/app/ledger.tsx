@@ -143,8 +143,12 @@ export function Ledger() {
   const [error, setError] = useState("");
   const form = useForm({
     defaultValues: emptyInput(today),
+    canSubmitWhenInvalid: true,
     validators: {
       onSubmit: nyushukkinInputSchema(today),
+    },
+    onSubmitInvalid: ({ formApi }) => {
+      setError(firstSubmitError(formApi.state.errorMap.onSubmit));
     },
     onSubmit: ({ value }) => {
       const recorded = editingId
@@ -258,6 +262,7 @@ export function Ledger() {
 
       <form
         className="flex flex-col gap-4"
+        noValidate
         onSubmit={(event) => {
           event.preventDefault();
           event.stopPropagation();
@@ -338,17 +343,7 @@ export function Ledger() {
           <p className="text-sm text-red-700 dark:text-red-400" role="alert">
             {error}
           </p>
-        ) : (
-          <form.Subscribe selector={(state) => firstSubmitError(state.errorMap.onSubmit)}>
-            {(message) =>
-              message ? (
-                <p className="text-sm text-red-700 dark:text-red-400" role="alert">
-                  {message}
-                </p>
-              ) : null
-            }
-          </form.Subscribe>
-        )}
+        ) : null}
         <div className="flex gap-3">
           <button
             className="rounded bg-zinc-900 px-4 py-2 text-sm text-white dark:bg-zinc-100 dark:text-zinc-900"

@@ -1,7 +1,7 @@
 ## 現在の状態
 
-- 実装済み: apps/web の入出金記録（金額・入出日・メモ、直す・消す、戻す、暦月の収支と一覧、壊れた保存のひとつ前）、ドメイン（CONTEXT.md / ADR-0001〜0013）、oxlint / oxfmt / vitest、apps/app 初期テンプレ、api Hello World
-- 作業中: apps/web に TanStack Form と Valibot を入れ、入出金フォームの入力検証を載せる（#8）
+- 実装済み: apps/web の入出金記録（金額・入出日・メモ、直す・消す、戻す、暦月の収支と一覧、壊れた保存のひとつ前）、TanStack Form と Valibot による入力検証、ドメイン（CONTEXT.md / ADR-0001〜0013）、oxlint / oxfmt / vitest、apps/app 初期テンプレ、api Hello World
+- 作業中: なし
 - 未着手: 枠の名前、入出金の API / app 側、端末をまたぐ同じ一冊
 
 ## 意思決定ログ

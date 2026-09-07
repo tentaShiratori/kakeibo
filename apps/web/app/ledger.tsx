@@ -4,13 +4,17 @@ import { useState, useSyncExternalStore, type FormEvent } from "react";
 import {
   calendarMonth,
   correctNyushukkin,
+  formatCalendarMonth,
+  isCurrentOrPastMonth,
   kinds,
   monthTotals,
+  nyushukkinInMonth,
   parseStored,
   recordNyushukkin,
   removeNyushukkin,
   replaceNyushukkin,
   serializeStored,
+  shiftCalendarMonth,
   sortNyushukkin,
   todayJst,
   type Nyushukkin,
@@ -51,8 +55,8 @@ function yen(amount: number): string {
 
 export function Ledger() {
   const today = todayJst();
-  const month = calendarMonth(today);
   const items = parseStored(useSyncExternalStore(subscribe, snapshot, () => null));
+  const [month, setMonth] = useState(calendarMonth(today));
   const [input, setInput] = useState<NyushukkinInput>(emptyInput(today));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -73,6 +77,7 @@ export function Ledger() {
       return;
     }
     persist(replaceNyushukkin(items, recorded.value));
+    setMonth(calendarMonth(recorded.value.date));
     setInput(emptyInput(today));
     setEditingId(null);
     setError("");
@@ -108,13 +113,31 @@ export function Ledger() {
   }
 
   const totals = monthTotals(items, month);
-  const listed = sortNyushukkin(items);
+  const listed = sortNyushukkin(nyushukkinInMonth(items, month));
+  const canShowNextMonth = isCurrentOrPastMonth(shiftCalendarMonth(month, 1), today);
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-8 px-4 py-10">
       <header className="flex flex-col gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">家計簿</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">{month}の収支</p>
+        <div className="flex items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
+          <button
+            className="underline"
+            type="button"
+            onClick={() => setMonth(shiftCalendarMonth(month, -1))}
+          >
+            前の月
+          </button>
+          <p>{formatCalendarMonth(month)}の収支</p>
+          <button
+            className="underline disabled:text-zinc-400 disabled:no-underline dark:disabled:text-zinc-600"
+            type="button"
+            disabled={!canShowNextMonth}
+            onClick={() => setMonth(shiftCalendarMonth(month, 1))}
+          >
+            次の月
+          </button>
+        </div>
         <dl className="grid grid-cols-3 gap-3 text-sm">
           <div>
             <dt className="text-zinc-500">収入</dt>
@@ -203,7 +226,9 @@ export function Ledger() {
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-medium">入出金</h2>
         {listed.length === 0 ? (
-          <p className="text-sm text-zinc-500">まだ入出金がありません</p>
+          <p className="text-sm text-zinc-500">
+            {items.length === 0 ? "まだ入出金がありません" : "この月の入出金はまだありません"}
+          </p>
         ) : (
           <ul className="flex flex-col divide-y divide-zinc-200 dark:divide-zinc-800">
             {listed.map((item) => (

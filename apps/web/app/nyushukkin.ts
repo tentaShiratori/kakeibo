@@ -34,6 +34,27 @@ export function calendarMonth(date: string): string {
   return date.slice(0, 7);
 }
 
+export function shiftCalendarMonth(month: string, delta: number): string {
+  const year = Number(month.slice(0, 4));
+  const monthIndex = Number(month.slice(5, 7)) - 1 + delta;
+  const shifted = new Date(Date.UTC(year, monthIndex, 1));
+  const nextYear = shifted.getUTCFullYear();
+  const nextMonth = String(shifted.getUTCMonth() + 1).padStart(2, "0");
+  return `${nextYear}-${nextMonth}`;
+}
+
+export function isCurrentOrPastMonth(month: string, today: string): boolean {
+  return month <= calendarMonth(today);
+}
+
+export function formatCalendarMonth(month: string): string {
+  return `${month.slice(0, 4)}年${Number(month.slice(5, 7))}月`;
+}
+
+export function nyushukkinInMonth(items: Nyushukkin[], month: string): Nyushukkin[] {
+  return items.filter((item) => calendarMonth(item.date) === month);
+}
+
 export function parseKind(raw: string): NyushukkinResult<Kind> {
   if (raw === "支出" || raw === "収入") {
     return { ok: true, value: raw };

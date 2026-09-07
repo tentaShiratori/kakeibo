@@ -1,16 +1,22 @@
 "use client";
 
-import { useState, useSyncExternalStore, type FormEvent } from "react";
+import { useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import {
   calendarMonth,
   correctNyushukkin,
+  formatCalendarMonth,
+  isCurrentOrPastMonth,
   kinds,
+  loadStored,
   monthTotals,
-  parseStored,
+  nyushukkinInMonth,
   recordNyushukkin,
   removeNyushukkin,
   replaceNyushukkin,
+  restoreNyushukkin,
+  readStored,
   serializeStored,
+  shiftCalendarMonth,
   sortNyushukkin,
   todayJst,
   type Nyushukkin,
@@ -18,6 +24,7 @@ import {
 } from "./nyushukkin";
 
 const storageKey = "kakeibo.nyushukkin";
+const backupKey = "kakeibo.nyushukkin.bak";
 const listeners = new Set<() => void>();
 
 function subscribe(onChange: () => void) {
@@ -28,13 +35,42 @@ function subscribe(onChange: () => void) {
 }
 
 function snapshot() {
-  return window.localStorage.getItem(storageKey);
+  return JSON.stringify([
+    window.localStorage.getItem(storageKey),
+    window.localStorage.getItem(backupKey),
+  ]);
 }
 
 function persist(items: Nyushukkin[]) {
-  window.localStorage.setItem(storageKey, serializeStored(items));
+  const current = window.localStorage.getItem(storageKey);
+  const next = serializeStored(items);
+  if (current !== null && readStored(current).ok) {
+    window.localStorage.setItem(backupKey, current);
+  }
+  window.localStorage.setItem(storageKey, next);
+  if (window.localStorage.getItem(backupKey) === null) {
+    window.localStorage.setItem(backupKey, next);
+  }
   for (const listener of listeners) {
     listener();
+  }
+}
+
+function itemsFromSnapshot(raw: string | null): Nyushukkin[] {
+  if (!raw) {
+    return [];
+  }
+  try {
+    const pair: unknown = JSON.parse(raw);
+    if (!Array.isArray(pair) || pair.length !== 2) {
+      return [];
+    }
+    return loadStored(
+      typeof pair[0] === "string" ? pair[0] : null,
+      typeof pair[1] === "string" ? pair[1] : null,
+    );
+  } catch {
+    return [];
   }
 }
 
@@ -51,11 +87,20 @@ function yen(amount: number): string {
 
 export function Ledger() {
   const today = todayJst();
-  const month = calendarMonth(today);
-  const items = parseStored(useSyncExternalStore(subscribe, snapshot, () => null));
+  const items = itemsFromSnapshot(useSyncExternalStore(subscribe, snapshot, () => null));
+  const amountRef = useRef<HTMLInputElement>(null);
+  const [month, setMonth] = useState(calendarMonth(today));
   const [input, setInput] = useState<NyushukkinInput>(emptyInput(today));
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [removed, setRemoved] = useState<Nyushukkin | null>(null);
   const [error, setError] = useState("");
+
+  function resetForm() {
+    setInput(emptyInput(today));
+    setEditingId(null);
+    setError("");
+    amountRef.current?.focus();
+  }
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -73,9 +118,8 @@ export function Ledger() {
       return;
     }
     persist(replaceNyushukkin(items, recorded.value));
-    setInput(emptyInput(today));
-    setEditingId(null);
-    setError("");
+    setMonth(calendarMonth(recorded.value.date));
+    resetForm();
   }
 
   function startCorrect(item: Nyushukkin) {
@@ -89,32 +133,62 @@ export function Ledger() {
     setError("");
   }
 
-  function cancelCorrect() {
-    setEditingId(null);
-    setInput(emptyInput(today));
+  function remove(id: string) {
+    const current = items.find((item) => item.id === id);
+    const next = removeNyushukkin(items, id);
+    if (!next.ok || !current) {
+      setError(next.ok ? "その入出金はありません" : next.error);
+      return;
+    }
+    persist(next.value);
+    setRemoved(current);
     setError("");
+    if (editingId === id) {
+      resetForm();
+    }
   }
 
-  function remove(id: string) {
-    const next = removeNyushukkin(items, id);
+  function restore() {
+    if (!removed) {
+      return;
+    }
+    const next = restoreNyushukkin(items, removed);
     if (!next.ok) {
       setError(next.error);
       return;
     }
     persist(next.value);
-    if (editingId === id) {
-      cancelCorrect();
-    }
+    setMonth(calendarMonth(removed.date));
+    setRemoved(null);
+    setError("");
   }
 
   const totals = monthTotals(items, month);
-  const listed = sortNyushukkin(items);
+  const listed = sortNyushukkin(nyushukkinInMonth(items, month));
+  const canShowNextMonth = isCurrentOrPastMonth(shiftCalendarMonth(month, 1), today);
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-8 px-4 py-10">
       <header className="flex flex-col gap-3">
         <h1 className="text-2xl font-semibold tracking-tight">家計簿</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">{month}の収支</p>
+        <div className="flex items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
+          <button
+            className="underline"
+            type="button"
+            onClick={() => setMonth(shiftCalendarMonth(month, -1))}
+          >
+            前の月
+          </button>
+          <p>{formatCalendarMonth(month)}の収支</p>
+          <button
+            className="underline disabled:text-zinc-400 disabled:no-underline dark:disabled:text-zinc-600"
+            type="button"
+            disabled={!canShowNextMonth}
+            onClick={() => setMonth(shiftCalendarMonth(month, 1))}
+          >
+            次の月
+          </button>
+        </div>
         <dl className="grid grid-cols-3 gap-3 text-sm">
           <div>
             <dt className="text-zinc-500">収入</dt>
@@ -132,24 +206,10 @@ export function Ledger() {
       </header>
 
       <form className="flex flex-col gap-4" onSubmit={submit}>
-        <fieldset className="flex gap-4">
-          <legend className="mb-1 text-sm font-medium">種類</legend>
-          {kinds.map((kind) => (
-            <label key={kind} className="flex items-center gap-2 text-sm">
-              <input
-                type="radio"
-                name="kind"
-                value={kind}
-                checked={input.kind === kind}
-                onChange={() => setInput({ ...input, kind })}
-              />
-              {kind}
-            </label>
-          ))}
-        </fieldset>
         <label className="flex flex-col gap-1 text-sm" htmlFor="nyushukkin-amount">
           金額
           <input
+            ref={amountRef}
             id="nyushukkin-amount"
             className="rounded border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
             inputMode="numeric"
@@ -170,6 +230,21 @@ export function Ledger() {
             onChange={(event) => setInput({ ...input, date: event.target.value })}
           />
         </label>
+        <fieldset className="flex gap-4">
+          <legend className="mb-1 text-sm font-medium">種類</legend>
+          {kinds.map((kind) => (
+            <label key={kind} className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="kind"
+                value={kind}
+                checked={input.kind === kind}
+                onChange={() => setInput({ ...input, kind })}
+              />
+              {kind}
+            </label>
+          ))}
+        </fieldset>
         <label className="flex flex-col gap-1 text-sm" htmlFor="nyushukkin-memo">
           メモ
           <input
@@ -193,7 +268,7 @@ export function Ledger() {
             {editingId ? "この入出金を直す" : "記録する"}
           </button>
           {editingId ? (
-            <button className="text-sm underline" type="button" onClick={cancelCorrect}>
+            <button className="text-sm underline" type="button" onClick={resetForm}>
               やめる
             </button>
           ) : null}
@@ -202,8 +277,15 @@ export function Ledger() {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-medium">入出金</h2>
+        {removed ? (
+          <button className="self-start text-sm underline" type="button" onClick={restore}>
+            消した入出金を戻す
+          </button>
+        ) : null}
         {listed.length === 0 ? (
-          <p className="text-sm text-zinc-500">まだ入出金がありません</p>
+          <p className="text-sm text-zinc-500">
+            {items.length === 0 ? "まだ入出金がありません" : "この月の入出金はまだありません"}
+          </p>
         ) : (
           <ul className="flex flex-col divide-y divide-zinc-200 dark:divide-zinc-800">
             {listed.map((item) => (

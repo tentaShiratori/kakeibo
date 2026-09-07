@@ -2,16 +2,23 @@ import { describe, expect, test } from "vitest";
 import {
   calendarMonth,
   correctNyushukkin,
+  formatCalendarMonth,
+  isCurrentOrPastMonth,
   monthTotals,
+  nyushukkinInMonth,
+  loadStored,
   parseAmount,
   parseDate,
   parseKind,
   parseMemo,
   parseStored,
+  readStored,
   recordNyushukkin,
   removeNyushukkin,
   replaceNyushukkin,
+  restoreNyushukkin,
   serializeStored,
+  shiftCalendarMonth,
   sortNyushukkin,
   todayJst,
 } from "./nyushukkin";
@@ -119,7 +126,7 @@ describe("correctNyushukkin", () => {
   });
 });
 
-describe("removeNyushukkin", () => {
+describe("removeNyushukkin / restoreNyushukkin", () => {
   const items = [
     { id: "a", kind: "支出" as const, amount: 5000, date: "2026-09-06", memo: "" },
     { id: "b", kind: "支出" as const, amount: 5000, date: "2026-09-06", memo: "" },
@@ -131,6 +138,18 @@ describe("removeNyushukkin", () => {
 
   test("無い入出金は消せない", () => {
     expect(removeNyushukkin(items, "z").ok).toBe(false);
+  });
+
+  test("消した入出金を戻せる", () => {
+    expect(restoreNyushukkin([items[1]], items[0])).toEqual({ ok: true, value: [items[1], items[0]] });
+  });
+
+  test("空の帳簿にも戻せる", () => {
+    expect(restoreNyushukkin([], items[0])).toEqual({ ok: true, value: [items[0]] });
+  });
+
+  test("すでに残っている入出金は戻せない", () => {
+    expect(restoreNyushukkin(items, items[0]).ok).toBe(false);
   });
 });
 
@@ -154,7 +173,7 @@ describe("monthTotals", () => {
   });
 });
 
-describe("parseStored", () => {
+describe("parseStored / loadStored", () => {
   test("空と壊れた値は空の帳簿にする", () => {
     expect(parseStored(null)).toEqual([]);
     expect(parseStored("nope")).toEqual([]);
@@ -168,6 +187,31 @@ describe("parseStored", () => {
     ];
     expect(parseStored(serializeStored(items as never))).toEqual([items[0]]);
   });
+
+  test("壊れた帳簿はひとつ前から戻す", () => {
+    const items = [{ id: "a", kind: "支出" as const, amount: 1, date: "2026-09-06", memo: "" }];
+    expect(loadStored("nope", serializeStored(items))).toEqual(items);
+  });
+
+  test("空の帳簿は壊れていない", () => {
+    const items = [{ id: "a", kind: "支出" as const, amount: 1, date: "2026-09-06", memo: "" }];
+    expect(loadStored("[]", serializeStored(items))).toEqual([]);
+  });
+
+  test("帳簿が無ければひとつ前を使う", () => {
+    const items = [{ id: "a", kind: "支出" as const, amount: 1, date: "2026-09-06", memo: "" }];
+    expect(loadStored(null, serializeStored(items))).toEqual(items);
+  });
+
+  test("両方無ければ空", () => {
+    expect(loadStored(null, null)).toEqual([]);
+  });
+
+  test("配列だけを帳簿として読む", () => {
+    expect(readStored(null).ok).toBe(false);
+    expect(readStored("nope").ok).toBe(false);
+    expect(readStored("[]")).toEqual({ ok: true, value: [] });
+  });
 });
 
 describe("sortNyushukkin", () => {
@@ -177,6 +221,46 @@ describe("sortNyushukkin", () => {
       { id: "b", kind: "支出" as const, amount: 1, date: "2026-09-06", memo: "" },
     ];
     expect(sortNyushukkin(items).map((item) => item.id)).toEqual(["b", "a"]);
+  });
+});
+
+describe("shiftCalendarMonth / formatCalendarMonth / isCurrentOrPastMonth", () => {
+  test("暦月を前後にずらす", () => {
+    expect(shiftCalendarMonth("2026-09", -1)).toBe("2026-08");
+    expect(shiftCalendarMonth("2026-09", 0)).toBe("2026-09");
+    expect(shiftCalendarMonth("2026-09", 1)).toBe("2026-10");
+  });
+
+  test("年の境をまたぐ", () => {
+    expect(shiftCalendarMonth("2026-01", -1)).toBe("2025-12");
+    expect(shiftCalendarMonth("2026-12", 1)).toBe("2027-01");
+  });
+
+  test("表示は年と月にする", () => {
+    expect(formatCalendarMonth("2026-09")).toBe("2026年9月");
+    expect(formatCalendarMonth("2026-01")).toBe("2026年1月");
+  });
+
+  test("今日の月より先は振り返らない", () => {
+    expect(isCurrentOrPastMonth("2026-09", today)).toBe(true);
+    expect(isCurrentOrPastMonth("2026-08", today)).toBe(true);
+    expect(isCurrentOrPastMonth("2026-10", today)).toBe(false);
+  });
+});
+
+describe("nyushukkinInMonth", () => {
+  const items = [
+    { id: "a", kind: "収入" as const, amount: 200000, date: "2026-09-01", memo: "" },
+    { id: "b", kind: "支出" as const, amount: 5000, date: "2026-09-06", memo: "" },
+    { id: "c", kind: "支出" as const, amount: 1200, date: "2026-08-31", memo: "" },
+  ];
+
+  test("指定した暦月の入出金だけ残す", () => {
+    expect(nyushukkinInMonth(items, "2026-09").map((item) => item.id)).toEqual(["a", "b"]);
+  });
+
+  test("入出金が無い月は空", () => {
+    expect(nyushukkinInMonth(items, "2026-07")).toEqual([]);
   });
 });
 

@@ -34,6 +34,27 @@ export function calendarMonth(date: string): string {
   return date.slice(0, 7);
 }
 
+export function shiftCalendarMonth(month: string, delta: number): string {
+  const year = Number(month.slice(0, 4));
+  const monthIndex = Number(month.slice(5, 7)) - 1 + delta;
+  const shifted = new Date(Date.UTC(year, monthIndex, 1));
+  const nextYear = shifted.getUTCFullYear();
+  const nextMonth = String(shifted.getUTCMonth() + 1).padStart(2, "0");
+  return `${nextYear}-${nextMonth}`;
+}
+
+export function isCurrentOrPastMonth(month: string, today: string): boolean {
+  return month <= calendarMonth(today);
+}
+
+export function formatCalendarMonth(month: string): string {
+  return `${month.slice(0, 4)}年${Number(month.slice(5, 7))}月`;
+}
+
+export function nyushukkinInMonth(items: Nyushukkin[], month: string): Nyushukkin[] {
+  return items.filter((item) => calendarMonth(item.date) === month);
+}
+
 export function parseKind(raw: string): NyushukkinResult<Kind> {
   if (raw === "支出" || raw === "収入") {
     return { ok: true, value: raw };
@@ -91,6 +112,16 @@ export function removeNyushukkin(items: Nyushukkin[], id: string): NyushukkinRes
   return { ok: true, value: items.filter((item) => item.id !== id) };
 }
 
+export function restoreNyushukkin(
+  items: Nyushukkin[],
+  removed: Nyushukkin,
+): NyushukkinResult<Nyushukkin[]> {
+  if (items.some((item) => item.id === removed.id)) {
+    return { ok: false, error: "その入出金はすでにあります" };
+  }
+  return { ok: true, value: [...items, removed] };
+}
+
 export function replaceNyushukkin(items: Nyushukkin[], next: Nyushukkin): Nyushukkin[] {
   const index = items.findIndex((item) => item.id === next.id);
   if (index === -1) {
@@ -125,13 +156,18 @@ export function sortNyushukkin(items: Nyushukkin[]): Nyushukkin[] {
 }
 
 export function parseStored(raw: string | null): Nyushukkin[] {
-  if (!raw) {
-    return [];
+  const read = readStored(raw);
+  return read.ok ? read.value : [];
+}
+
+export function readStored(raw: string | null): NyushukkinResult<Nyushukkin[]> {
+  if (raw == null) {
+    return { ok: false, error: "帳簿がありません" };
   }
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) {
-      return [];
+      return { ok: false, error: "帳簿が壊れています" };
     }
     const items: Nyushukkin[] = [];
     for (const row of parsed) {
@@ -140,10 +176,22 @@ export function parseStored(raw: string | null): Nyushukkin[] {
         items.push(item);
       }
     }
-    return items;
+    return { ok: true, value: items };
   } catch {
-    return [];
+    return { ok: false, error: "帳簿が壊れています" };
   }
+}
+
+export function loadStored(primary: string | null, backup: string | null): Nyushukkin[] {
+  const main = readStored(primary);
+  if (main.ok) {
+    return main.value;
+  }
+  const prev = readStored(backup);
+  if (prev.ok) {
+    return prev.value;
+  }
+  return [];
 }
 
 export function serializeStored(items: Nyushukkin[]): string {

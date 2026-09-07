@@ -1,0 +1,17 @@
+{
+  "name": "kakeibo",
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "web",
+      "command": "cd apps/web && ~/.local/bin/mise exec -- pnpm dev",
+      "description": "家計簿 Web（Next.js 16）の開発サーバ。http://localhost:3000 で確認する"
+    }
+  ],
+  "ports": [
+    {
+      "name": "web",
+      "port": 3000
+    }
+  ]
+}

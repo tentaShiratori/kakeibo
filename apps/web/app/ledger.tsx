@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore, type FormEvent } from "react";
+import { useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import {
   calendarMonth,
   correctNyushukkin,
@@ -13,6 +13,7 @@ import {
   recordNyushukkin,
   removeNyushukkin,
   replaceNyushukkin,
+  restoreNyushukkin,
   serializeStored,
   shiftCalendarMonth,
   sortNyushukkin,
@@ -56,10 +57,19 @@ function yen(amount: number): string {
 export function Ledger() {
   const today = todayJst();
   const items = parseStored(useSyncExternalStore(subscribe, snapshot, () => null));
+  const amountRef = useRef<HTMLInputElement>(null);
   const [month, setMonth] = useState(calendarMonth(today));
   const [input, setInput] = useState<NyushukkinInput>(emptyInput(today));
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [removed, setRemoved] = useState<Nyushukkin | null>(null);
   const [error, setError] = useState("");
+
+  function resetForm() {
+    setInput(emptyInput(today));
+    setEditingId(null);
+    setError("");
+    amountRef.current?.focus();
+  }
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -78,9 +88,7 @@ export function Ledger() {
     }
     persist(replaceNyushukkin(items, recorded.value));
     setMonth(calendarMonth(recorded.value.date));
-    setInput(emptyInput(today));
-    setEditingId(null);
-    setError("");
+    resetForm();
   }
 
   function startCorrect(item: Nyushukkin) {
@@ -94,22 +102,34 @@ export function Ledger() {
     setError("");
   }
 
-  function cancelCorrect() {
-    setEditingId(null);
-    setInput(emptyInput(today));
+  function remove(id: string) {
+    const current = items.find((item) => item.id === id);
+    const next = removeNyushukkin(items, id);
+    if (!next.ok || !current) {
+      setError(next.ok ? "その入出金はありません" : next.error);
+      return;
+    }
+    persist(next.value);
+    setRemoved(current);
     setError("");
+    if (editingId === id) {
+      resetForm();
+    }
   }
 
-  function remove(id: string) {
-    const next = removeNyushukkin(items, id);
+  function restore() {
+    if (!removed) {
+      return;
+    }
+    const next = restoreNyushukkin(items, removed);
     if (!next.ok) {
       setError(next.error);
       return;
     }
     persist(next.value);
-    if (editingId === id) {
-      cancelCorrect();
-    }
+    setMonth(calendarMonth(removed.date));
+    setRemoved(null);
+    setError("");
   }
 
   const totals = monthTotals(items, month);
@@ -155,24 +175,10 @@ export function Ledger() {
       </header>
 
       <form className="flex flex-col gap-4" onSubmit={submit}>
-        <fieldset className="flex gap-4">
-          <legend className="mb-1 text-sm font-medium">種類</legend>
-          {kinds.map((kind) => (
-            <label key={kind} className="flex items-center gap-2 text-sm">
-              <input
-                type="radio"
-                name="kind"
-                value={kind}
-                checked={input.kind === kind}
-                onChange={() => setInput({ ...input, kind })}
-              />
-              {kind}
-            </label>
-          ))}
-        </fieldset>
         <label className="flex flex-col gap-1 text-sm" htmlFor="nyushukkin-amount">
           金額
           <input
+            ref={amountRef}
             id="nyushukkin-amount"
             className="rounded border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
             inputMode="numeric"
@@ -193,6 +199,21 @@ export function Ledger() {
             onChange={(event) => setInput({ ...input, date: event.target.value })}
           />
         </label>
+        <fieldset className="flex gap-4">
+          <legend className="mb-1 text-sm font-medium">種類</legend>
+          {kinds.map((kind) => (
+            <label key={kind} className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="kind"
+                value={kind}
+                checked={input.kind === kind}
+                onChange={() => setInput({ ...input, kind })}
+              />
+              {kind}
+            </label>
+          ))}
+        </fieldset>
         <label className="flex flex-col gap-1 text-sm" htmlFor="nyushukkin-memo">
           メモ
           <input
@@ -216,7 +237,7 @@ export function Ledger() {
             {editingId ? "この入出金を直す" : "記録する"}
           </button>
           {editingId ? (
-            <button className="text-sm underline" type="button" onClick={cancelCorrect}>
+            <button className="text-sm underline" type="button" onClick={resetForm}>
               やめる
             </button>
           ) : null}
@@ -225,6 +246,11 @@ export function Ledger() {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-medium">入出金</h2>
+        {removed ? (
+          <button className="self-start text-sm underline" type="button" onClick={restore}>
+            消した入出金を戻す
+          </button>
+        ) : null}
         {listed.length === 0 ? (
           <p className="text-sm text-zinc-500">
             {items.length === 0 ? "まだ入出金がありません" : "この月の入出金はまだありません"}

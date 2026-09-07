@@ -57,6 +57,43 @@ test("入出金を消せる", () => {
   expect(screen.getByText("まだ入出金がありません")).toBeDefined();
 });
 
+test("消した入出金を戻せる", () => {
+  render(<Ledger />);
+  fireEvent.change(screen.getByLabelText("金額"), { target: { value: "5000" } });
+  fireEvent.click(screen.getByRole("button", { name: "記録する" }));
+  fireEvent.click(screen.getByRole("button", { name: "消す" }));
+  fireEvent.click(screen.getByRole("button", { name: "消した入出金を戻す" }));
+  expect(screen.getByText(`${todayJst()} 支出 5,000円`)).toBeDefined();
+  expect(screen.queryByRole("button", { name: "消した入出金を戻す" })).toBeNull();
+});
+
+test("戻すと入出日の月へ移る", () => {
+  const lastMonth = shiftCalendarMonth(calendarMonth(todayJst()), -1);
+  const pastDate = `${lastMonth}-15`;
+  render(<Ledger />);
+  fireEvent.change(screen.getByLabelText("金額"), { target: { value: "1200" } });
+  fireEvent.change(screen.getByLabelText("入出日"), { target: { value: pastDate } });
+  fireEvent.click(screen.getByRole("button", { name: "記録する" }));
+  fireEvent.click(screen.getByRole("button", { name: "消す" }));
+  fireEvent.click(screen.getByRole("button", { name: "次の月" }));
+  fireEvent.click(screen.getByRole("button", { name: "消した入出金を戻す" }));
+  expect(screen.getByText(`${formatCalendarMonth(lastMonth)}の収支`)).toBeDefined();
+  expect(screen.getByText(`${pastDate} 支出 1,200円`)).toBeDefined();
+});
+
+test("記録したあと金額に戻り続けて書ける", () => {
+  render(<Ledger />);
+  const amount = screen.getByLabelText("金額");
+  fireEvent.change(amount, { target: { value: "5000" } });
+  fireEvent.click(screen.getByRole("button", { name: "記録する" }));
+  expect(amount).toBe(document.activeElement);
+  expect((amount as HTMLInputElement).value).toBe("");
+  fireEvent.change(amount, { target: { value: "800" } });
+  fireEvent.click(screen.getByRole("button", { name: "記録する" }));
+  expect(screen.getByText(`${todayJst()} 支出 5,000円`)).toBeDefined();
+  expect(screen.getByText(`${todayJst()} 支出 800円`)).toBeDefined();
+});
+
 test("一覧と収支は見ている暦月だけにする", () => {
   const today = todayJst();
   const thisMonth = calendarMonth(today);

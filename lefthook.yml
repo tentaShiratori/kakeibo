@@ -1,0 +1,26 @@
+# git commit 前は触ったファイルの fmt / lint だけ。
+# typecheck とテストは CI（.github/workflows/ci.yml）。全テストは回さない。
+min_version: 2.1.10
+
+pre-commit:
+  parallel: false
+  jobs:
+    - name: oxfmt
+      glob: "*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,json,md,css,yml,yaml}"
+      run: pnpm exec oxfmt {staged_files}
+      stage_fixed: true
+
+    - name: oxlint-web
+      root: apps/web/
+      glob: "*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
+      run: pnpm exec oxlint {staged_files}
+
+    - name: oxlint-app
+      root: apps/app/
+      glob: "*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
+      run: pnpm exec oxlint {staged_files}
+
+    - name: gofmt
+      glob: "*.go"
+      run: gofmt -w {staged_files}
+      stage_fixed: true

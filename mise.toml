@@ -10,5 +10,8 @@ node = "25.9.0"
 rust = "1.95.0"
 uv = "0.12.9"
 
+[hooks]
+postinstall = "lefthook install"
+
 [env]
 MISE_PIN = true

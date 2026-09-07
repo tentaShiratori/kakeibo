@@ -1,6 +1,6 @@
 ## 現在の状態
 
-- 実装済み: apps/web の入出金記録（金額・入出日・メモ、直す・消す、戻す、暦月の収支と一覧、壊れた保存のひとつ前）、Jotai の atomWithStorage によるブラウザ保存、TanStack Form と Valibot による入力検証、web の簡易デザインシステム（globals.css のトークンと Button / Field）、web のテスト描画は `test/renderApp`、ドメイン（CONTEXT.md / ADR-0001〜0013）、oxlint / oxfmt / vitest、apps/app 初期テンプレ、api Hello World、GitHub の issue / PR テンプレート、Dependabot の週次更新、PR / main の CI、Dependabot の minor / patch は CI 通過後に自動マージ、fallow による不要コード検査
+- 実装済み: apps/web の入出金記録（金額・入出日・メモ、直す・消す、戻す、暦月の収支と一覧、壊れた保存のひとつ前）、Jotai の atomWithStorage によるブラウザ保存、TanStack Form と Valibot による入力検証、web の簡易デザインシステム（globals.css のトークンと Button / Field）、web のテスト描画は `test/renderApp`、ドメイン（CONTEXT.md / ADR-0001〜0013）、oxlint / oxfmt / vitest、apps/app 初期テンプレ、api Hello World、GitHub の issue / PR テンプレート、Dependabot の週次更新、PR / main の CI、Dependabot の minor / patch は CI 通過後に自動マージ、fallow による不要コード検査、lefthook によるコミット前の oxfmt / oxlint / gofmt（#5）
 - 作業中: なし
 - 未着手: api に入出金を載せる（#22）、枠の名前、入出金の app 側、web から api への接続、端末をまたぐ同じ一冊
 
@@ -44,6 +44,8 @@
 - 2026-09-07: afterFileEdit フックは stdin の BOM を除いてから JSON を読む。Windows で Cursor が BOM を付けると format.ts が落ちていた
 - 2026-09-07: web のテスト描画は `apps/web/test/renderApp`。Provider は `AppProviders` に足す。コンポーネントテストの `render` は `renderApp` に置き換えた。`renderHook` はそのまま
 - 2026-09-07: turbo の一括テストは `test:run`。パッケージの `test` は vitest（`pnpm test run {ファイル}` 用）。ルートの `pnpm test` は `turbo run test:run`
+- 2026-09-07: lefthook の pre-commit は触ったファイルの oxfmt / oxlint（Go なら gofmt）だけ。typecheck とテストは CI。husky / lint-staged は入れない。oxlint は apps/web と apps/app の cwd で回し、パッケージの設定を使う
+- 2026-09-07: lefthook install は mise の postinstall hook が実行する。README に手で lefthook install とは書かない。lefthook が PATH にない環境（CI の部分 install）ではスキップする
 
 ## 次のセッションで対応すること
 

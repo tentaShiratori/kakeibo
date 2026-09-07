@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/tentaShiratori/kakeibo/api/internal/controller"
 	"github.com/tentaShiratori/kakeibo/api/internal/infra/repository/nyushukkin_repository"
 	"github.com/tentaShiratori/kakeibo/api/internal/lib/uuid_utils"
 	"github.com/tentaShiratori/kakeibo/api/internal/usecase"
@@ -20,6 +21,7 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	app := usecase.New(nyushukkin_repository.New(path), time.Now, uuid_utils.New)
-	log.Fatal(http.ListenAndServe(":"+port, newServer(app)))
+	repo := nyushukkin_repository.New(path)
+	app := usecase.New(repo, time.Now, uuid_utils.New)
+	log.Fatal(http.ListenAndServe(":"+port, controller.NewNyushukkin(app, repo)))
 }

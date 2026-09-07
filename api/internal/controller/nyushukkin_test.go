@@ -1,4 +1,4 @@
-package main
+package controller
 
 import (
 	"bytes"
@@ -17,7 +17,7 @@ import (
 	"github.com/tentaShiratori/kakeibo/api/internal/usecase"
 )
 
-func TestServerNyushukkin(t *testing.T) {
+func TestNyushukkin(t *testing.T) {
 	ts := testServer(t)
 	created := postNyushukkin(t, ts, `{"kind":"支出","amount":5000,"date":"2026-09-06","memo":"米"}`, http.StatusCreated)
 	if created.ID == "" || created.Amount != 5000 || created.Kind != "支出" || created.Memo != "米" {
@@ -53,7 +53,7 @@ func TestServerNyushukkin(t *testing.T) {
 	}
 }
 
-func TestServerRestartKeepsBook(t *testing.T) {
+func TestNyushukkinRestartKeepsBook(t *testing.T) {
 	now := mustTime("2026-09-06T12:00:00+09:00")
 	path := filepath.Join(t.TempDir(), "kakeibo.json")
 	ids := 0
@@ -61,12 +61,14 @@ func TestServerRestartKeepsBook(t *testing.T) {
 		ids++
 		return fmt.Sprintf("id-%d", ids)
 	}
-	app := usecase.New(nyushukkin_repository.New(path), func() time.Time { return now }, newID)
-	ts := httptest.NewServer(newServer(app))
+	repo := nyushukkin_repository.New(path)
+	app := usecase.New(repo, func() time.Time { return now }, newID)
+	ts := httptest.NewServer(NewNyushukkin(app, repo))
 	created := postNyushukkin(t, ts, `{"kind":"支出","amount":1,"date":"2026-09-06","memo":""}`, http.StatusCreated)
 	ts.Close()
 
-	reopened := httptest.NewServer(newServer(usecase.New(nyushukkin_repository.New(path), func() time.Time { return now }, uuid_utils.New)))
+	reopenedRepo := nyushukkin_repository.New(path)
+	reopened := httptest.NewServer(NewNyushukkin(usecase.New(reopenedRepo, func() time.Time { return now }, uuid_utils.New), reopenedRepo))
 	t.Cleanup(reopened.Close)
 	got := listNyushukkin(t, reopened, "2026-09", http.StatusOK)
 	if len(got) != 1 || got[0] != created {
@@ -74,7 +76,7 @@ func TestServerRestartKeepsBook(t *testing.T) {
 	}
 }
 
-func TestServerValidation(t *testing.T) {
+func TestNyushukkinValidation(t *testing.T) {
 	ts := testServer(t)
 	cases := []struct {
 		name   string
@@ -97,7 +99,7 @@ func TestServerValidation(t *testing.T) {
 	}
 }
 
-func TestServerNotFoundAndMonth(t *testing.T) {
+func TestNyushukkinNotFoundAndMonth(t *testing.T) {
 	ts := testServer(t)
 	_, body := doJSON(t, ts, http.MethodPut, "/nyushukkin/missing", `{"kind":"支出","amount":1,"date":"2026-09-06","memo":""}`, http.StatusNotFound)
 	assertError(t, body, nyushukkin.NotFound)
@@ -123,7 +125,7 @@ func TestServerNotFoundAndMonth(t *testing.T) {
 	assertError(t, body, nyushukkin.AmountError)
 }
 
-func TestServerAssignsID(t *testing.T) {
+func TestNyushukkinAssignsID(t *testing.T) {
 	ts := testServer(t)
 	created := postNyushukkin(t, ts, `{"id":"client","kind":"支出","amount":1,"date":"2026-09-06","memo":""}`, http.StatusCreated)
 	if created.ID == "client" || created.ID == "" {
@@ -135,11 +137,12 @@ func testServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	now := mustTime("2026-09-06T12:00:00+09:00")
 	n := 0
-	app := usecase.New(nyushukkin_repository.New(filepath.Join(t.TempDir(), "kakeibo.json")), func() time.Time { return now }, func() string {
+	repo := nyushukkin_repository.New(filepath.Join(t.TempDir(), "kakeibo.json"))
+	app := usecase.New(repo, func() time.Time { return now }, func() string {
 		n++
 		return fmt.Sprintf("id-%d", n)
 	})
-	ts := httptest.NewServer(newServer(app))
+	ts := httptest.NewServer(NewNyushukkin(app, repo))
 	t.Cleanup(ts.Close)
 	return ts
 }

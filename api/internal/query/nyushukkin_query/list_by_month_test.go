@@ -10,11 +10,6 @@ type stubRepo struct {
 	items []nyushukkin.Nyushukkin
 }
 
-func (s stubRepo) Record(nyushukkin.Nyushukkin) error  { return nil }
-func (s stubRepo) Correct(nyushukkin.Nyushukkin) error { return nil }
-func (s stubRepo) Remove(string) (nyushukkin.Nyushukkin, error) {
-	return nyushukkin.Nyushukkin{}, nil
-}
 func (s stubRepo) All() []nyushukkin.Nyushukkin { return s.items }
 
 func TestListByMonth(t *testing.T) {

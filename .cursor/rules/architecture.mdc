@@ -20,8 +20,12 @@ alwaysApply: true
 
 `api/internal` の構成は次が正。パッケージ名は葉フォルダ名。用語は CONTEXT.md のローマ字（例は `user` だが、入出金なら `nyushukkin`）。フォルダは使う関心事だけ作る。mysql / s3 / master_data は、その保存やマスタが要るときだけ。
 
+書く処理（作成・更新・削除）は `usecase`。読む処理は `query`。HTTP は `controller`。`cmd/server` は起動と組み立てだけ。
+
 ```
 internal/
+  controller/
+    nyushukkin.go              # パッケージ名 controller
   domain/
     model/
       user/                    # パッケージ名 user
@@ -63,7 +67,7 @@ internal/
       uuid_utils.go
 ```
 
-HTTP は `cmd/server`。usecase の `app.go` にリポジトリなどの口を置き、子パッケージは usecase を import してよい。usecase は子を import しない。
+usecase の `app.go` に書く口を置く。query は読む口だけを見る。controller は usecase と query を呼ぶ。usecase は子パッケージを import しない。
 
 # 名前
 
@@ -77,6 +81,6 @@ HTTP は `cmd/server`。usecase の `app.go` にリポジトリなどの口を�
 | テスト | 対象の隣に `*.test.ts` / `*.test.tsx` | `app/_lib/Ledger.test.tsx` |
 | Next.js の予約名 | フレームワークどおり小文字 | `page.tsx`, `layout.tsx` |
 | Go（cmd） | 小文字。テストは `_test.go` | `main.go` |
-| Go（internal） | 上の構成どおり snake_case。テストは `_test.go` | `entity.go`, `create_user.go` |
+| Go（internal） | 上の構成どおり snake_case。テストは `_test.go` | `entity.go`, `nyushukkin.go` |
 | Rust | snake_case | `lib.rs` |
 | ADR | `NNNN-kebab-case.md` | `0001-one-household-ledger.md` |

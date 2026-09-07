@@ -1,4 +1,4 @@
-package main
+package controller
 
 import (
 	"encoding/json"
@@ -13,27 +13,28 @@ import (
 	"github.com/tentaShiratori/kakeibo/api/internal/usecase/remove_nyushukkin"
 )
 
-type server struct {
-	app usecase.App
+type Nyushukkin struct {
+	app   usecase.App
+	query nyushukkin_query.Repository
 }
 
-func newServer(app usecase.App) http.Handler {
-	s := &server{app: app}
+func NewNyushukkin(app usecase.App, query nyushukkin_query.Repository) http.Handler {
+	c := &Nyushukkin{app: app, query: query}
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /nyushukkin", s.record)
-	mux.HandleFunc("GET /nyushukkin", s.list)
-	mux.HandleFunc("PUT /nyushukkin/{id}", s.correct)
-	mux.HandleFunc("DELETE /nyushukkin/{id}", s.remove)
+	mux.HandleFunc("POST /nyushukkin", c.record)
+	mux.HandleFunc("GET /nyushukkin", c.list)
+	mux.HandleFunc("PUT /nyushukkin/{id}", c.correct)
+	mux.HandleFunc("DELETE /nyushukkin/{id}", c.remove)
 	return mux
 }
 
-func (s *server) record(w http.ResponseWriter, r *http.Request) {
+func (c *Nyushukkin) record(w http.ResponseWriter, r *http.Request) {
 	input, err := decodeInput(r)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	item, err := record_nyushukkin.RecordNyushukkin(s.app, input)
+	item, err := record_nyushukkin.RecordNyushukkin(c.app, input)
 	if err != nil {
 		writeUsecaseError(w, err)
 		return
@@ -41,13 +42,13 @@ func (s *server) record(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, item)
 }
 
-func (s *server) correct(w http.ResponseWriter, r *http.Request) {
+func (c *Nyushukkin) correct(w http.ResponseWriter, r *http.Request) {
 	input, err := decodeInput(r)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	item, err := correct_nyushukkin.CorrectNyushukkin(s.app, r.PathValue("id"), input)
+	item, err := correct_nyushukkin.CorrectNyushukkin(c.app, r.PathValue("id"), input)
 	if err != nil {
 		writeUsecaseError(w, err)
 		return
@@ -55,8 +56,8 @@ func (s *server) correct(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, item)
 }
 
-func (s *server) remove(w http.ResponseWriter, r *http.Request) {
-	removed, err := remove_nyushukkin.RemoveNyushukkin(s.app, r.PathValue("id"))
+func (c *Nyushukkin) remove(w http.ResponseWriter, r *http.Request) {
+	removed, err := remove_nyushukkin.RemoveNyushukkin(c.app, r.PathValue("id"))
 	if err != nil {
 		writeUsecaseError(w, err)
 		return
@@ -64,8 +65,8 @@ func (s *server) remove(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, removed)
 }
 
-func (s *server) list(w http.ResponseWriter, r *http.Request) {
-	items, err := nyushukkin_query.ListByMonth(s.app.Nyushukkin, r.URL.Query().Get("month"))
+func (c *Nyushukkin) list(w http.ResponseWriter, r *http.Request) {
+	items, err := nyushukkin_query.ListByMonth(c.query, r.URL.Query().Get("month"))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return

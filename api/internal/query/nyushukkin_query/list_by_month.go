@@ -2,10 +2,13 @@ package nyushukkin_query
 
 import (
 	"github.com/tentaShiratori/kakeibo/api/internal/domain/model/nyushukkin"
-	"github.com/tentaShiratori/kakeibo/api/internal/usecase"
 )
 
-func ListByMonth(repo usecase.NyushukkinRepository, month string) ([]nyushukkin.Nyushukkin, error) {
+type Repository interface {
+	All() []nyushukkin.Nyushukkin
+}
+
+func ListByMonth(repo Repository, month string) ([]nyushukkin.Nyushukkin, error) {
 	parsed, err := nyushukkin.ParseMonth(month)
 	if err != nil {
 		return nil, err

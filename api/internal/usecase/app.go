@@ -10,7 +10,6 @@ type NyushukkinRepository interface {
 	Record(item nyushukkin.Nyushukkin) error
 	Correct(item nyushukkin.Nyushukkin) error
 	Remove(id string) (nyushukkin.Nyushukkin, error)
-	All() []nyushukkin.Nyushukkin
 }
 
 type App struct {

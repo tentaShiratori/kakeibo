@@ -1,0 +1,50 @@
+name: 不具合
+description: 期待と違う動きを報告する
+title: "[不具合] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        用語は `CONTEXT.md` に合わせる。入出金・枠・収支など、画面やコードの呼び方をそのまま書かない。
+  - type: dropdown
+    id: surface
+    attributes:
+      label: 面
+      description: 起きた場所
+      options:
+        - apps/web
+        - apps/app
+        - api
+        - わからない
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: 起きたこと
+      description: 実際に見えた動き
+      placeholder: 例）入出金を消したあと、同じ画面に戻すが出てこない
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待した動き
+      placeholder: 例）消した直後なら、戻すで元に戻る
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      description: 他の人が同じ動きを出せる手順
+      placeholder: 1. … / 2. … / 3. …
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: 環境・補足
+      description: ブラウザ、OS、保存の状態など。任意。
+    validations:
+      required: false

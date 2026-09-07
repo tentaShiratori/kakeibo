@@ -14,10 +14,14 @@ export function consumeStdin(): void {
   readStdin();
 }
 
+export function parseStdinJson<T = Record<string, unknown>>(raw: string): T {
+  const text = raw.replace(/^\uFEFF/, "").trim();
+  if (!text) return {} as T;
+  return JSON.parse(text) as T;
+}
+
 export function readStdinJson<T = Record<string, unknown>>(): T {
-  const raw = readStdin();
-  if (!raw.trim()) return {} as T;
-  return JSON.parse(raw) as T;
+  return parseStdinJson<T>(readStdin());
 }
 
 export function repoRoot(): string {

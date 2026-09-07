@@ -59,6 +59,31 @@ test("0円は記録できない", () => {
   expect(screen.getByText("まだ入出金がありません")).toBeDefined();
 });
 
+test("空の金額は記録できない", () => {
+  render(<Ledger />);
+  fireEvent.click(screen.getByRole("button", { name: "記録する" }));
+  expect(screen.getByRole("alert").textContent).toBe("金額は1円以上の整数円です");
+  expect(screen.getByText("まだ入出金がありません")).toBeDefined();
+});
+
+test("未来の入出日は記録できない", () => {
+  render(<Ledger />);
+  fireEvent.change(screen.getByLabelText("金額"), { target: { value: "100" } });
+  fireEvent.change(screen.getByLabelText("入出日"), { target: { value: "2099-01-01" } });
+  fireEvent.click(screen.getByRole("button", { name: "記録する" }));
+  expect(screen.getByRole("alert").textContent).toBe("入出日は今日以前の日付です");
+  expect(screen.getByText("まだ入出金がありません")).toBeDefined();
+});
+
+test("収入を記録できる", () => {
+  render(<Ledger />);
+  fireEvent.click(screen.getByLabelText("収入"));
+  fireEvent.change(screen.getByLabelText("金額"), { target: { value: "200000" } });
+  fireEvent.click(screen.getByRole("button", { name: "記録する" }));
+  expect(screen.getByText(`${todayJst()} 収入 200,000円`)).toBeDefined();
+  expect(screen.getByText("200,000円", { selector: "dd" })).toBeDefined();
+});
+
 test("同じ入出金を直せる", () => {
   render(<Ledger />);
   fireEvent.change(screen.getByLabelText("金額"), { target: { value: "5000" } });

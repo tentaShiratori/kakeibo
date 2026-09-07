@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useForm } from "@tanstack/react-form";
+import { useRef, useState, useSyncExternalStore } from "react";
 import {
   calendarMonth,
   correctNyushukkin,
@@ -10,6 +11,7 @@ import {
   loadStored,
   monthTotals,
   nyushukkinInMonth,
+  nyushukkinInputSchema,
   recordNyushukkin,
   removeNyushukkin,
   replaceNyushukkin,
@@ -26,6 +28,7 @@ import {
 const storageKey = "kakeibo.nyushukkin";
 const backupKey = "kakeibo.nyushukkin.bak";
 const listeners = new Set<() => void>();
+const fieldOrder = ["kind", "amount", "date", "memo"] as const;
 
 function subscribe(onChange: () => void) {
   listeners.add(onChange);
@@ -85,46 +88,94 @@ function yen(amount: number): string {
   return `${amount.toLocaleString("ja-JP")}円`;
 }
 
+function issueMessage(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (!Array.isArray(value) || value.length === 0) {
+    return "";
+  }
+  const first = value[0];
+  if (typeof first === "string") {
+    return first;
+  }
+  if (first && typeof first === "object" && "message" in first && typeof first.message === "string") {
+    return first.message;
+  }
+  return "";
+}
+
+function firstSubmitError(onSubmit: unknown): string {
+  if (!onSubmit) {
+    return "";
+  }
+  if (typeof onSubmit === "string") {
+    return onSubmit;
+  }
+  if (typeof onSubmit !== "object") {
+    return "";
+  }
+  const grouped = onSubmit as Record<string, unknown>;
+  for (const key of fieldOrder) {
+    const message = issueMessage(grouped[key]);
+    if (message) {
+      return message;
+    }
+  }
+  for (const value of Object.values(grouped)) {
+    const message = issueMessage(value);
+    if (message) {
+      return message;
+    }
+  }
+  return "";
+}
+
+const inputClass = "rounded border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950";
+
 export function Ledger() {
   const today = todayJst();
   const items = itemsFromSnapshot(useSyncExternalStore(subscribe, snapshot, () => null));
   const amountRef = useRef<HTMLInputElement>(null);
   const [month, setMonth] = useState(calendarMonth(today));
-  const [input, setInput] = useState<NyushukkinInput>(emptyInput(today));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [removed, setRemoved] = useState<Nyushukkin | null>(null);
   const [error, setError] = useState("");
+  const form = useForm({
+    defaultValues: emptyInput(today),
+    validators: {
+      onSubmit: nyushukkinInputSchema(today),
+    },
+    onSubmit: ({ value }) => {
+      const recorded = editingId
+        ? (() => {
+            const current = items.find((item) => item.id === editingId);
+            if (!current) {
+              return { ok: false as const, error: "その入出金はありません" };
+            }
+            return correctNyushukkin(current, value, today);
+          })()
+        : recordNyushukkin(value, today, crypto.randomUUID());
+      if (!recorded.ok) {
+        setError(recorded.error);
+        return;
+      }
+      persist(replaceNyushukkin(items, recorded.value));
+      setMonth(calendarMonth(recorded.value.date));
+      resetForm();
+    },
+  });
 
   function resetForm() {
-    setInput(emptyInput(today));
+    form.reset(emptyInput(today));
     setEditingId(null);
     setError("");
     amountRef.current?.focus();
   }
 
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const recorded = editingId
-      ? (() => {
-          const current = items.find((item) => item.id === editingId);
-          if (!current) {
-            return { ok: false as const, error: "その入出金はありません" };
-          }
-          return correctNyushukkin(current, input, today);
-        })()
-      : recordNyushukkin(input, today, crypto.randomUUID());
-    if (!recorded.ok) {
-      setError(recorded.error);
-      return;
-    }
-    persist(replaceNyushukkin(items, recorded.value));
-    setMonth(calendarMonth(recorded.value.date));
-    resetForm();
-  }
-
   function startCorrect(item: Nyushukkin) {
     setEditingId(item.id);
-    setInput({
+    form.reset({
       kind: item.kind,
       amount: String(item.amount),
       date: item.date,
@@ -205,61 +256,99 @@ export function Ledger() {
         </dl>
       </header>
 
-      <form className="flex flex-col gap-4" onSubmit={submit}>
-        <label className="flex flex-col gap-1 text-sm" htmlFor="nyushukkin-amount">
-          金額
-          <input
-            ref={amountRef}
-            id="nyushukkin-amount"
-            className="rounded border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
-            inputMode="numeric"
-            name="amount"
-            value={input.amount}
-            onChange={(event) => setInput({ ...input, amount: event.target.value })}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm" htmlFor="nyushukkin-date">
-          入出日
-          <input
-            id="nyushukkin-date"
-            className="rounded border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
-            type="date"
-            name="date"
-            max={today}
-            value={input.date}
-            onChange={(event) => setInput({ ...input, date: event.target.value })}
-          />
-        </label>
-        <fieldset className="flex gap-4">
-          <legend className="mb-1 text-sm font-medium">種類</legend>
-          {kinds.map((kind) => (
-            <label key={kind} className="flex items-center gap-2 text-sm">
+      <form
+        className="flex flex-col gap-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setError("");
+          void form.handleSubmit();
+        }}
+      >
+        <form.Field name="amount">
+          {(field) => (
+            <label className="flex flex-col gap-1 text-sm" htmlFor="nyushukkin-amount">
+              金額
               <input
-                type="radio"
-                name="kind"
-                value={kind}
-                checked={input.kind === kind}
-                onChange={() => setInput({ ...input, kind })}
+                ref={amountRef}
+                id="nyushukkin-amount"
+                className={inputClass}
+                inputMode="numeric"
+                name={field.name}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
               />
-              {kind}
             </label>
-          ))}
-        </fieldset>
-        <label className="flex flex-col gap-1 text-sm" htmlFor="nyushukkin-memo">
-          メモ
-          <input
-            id="nyushukkin-memo"
-            className="rounded border border-zinc-300 bg-white px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
-            name="memo"
-            value={input.memo}
-            onChange={(event) => setInput({ ...input, memo: event.target.value })}
-          />
-        </label>
+          )}
+        </form.Field>
+        <form.Field name="date">
+          {(field) => (
+            <label className="flex flex-col gap-1 text-sm" htmlFor="nyushukkin-date">
+              入出日
+              <input
+                id="nyushukkin-date"
+                className={inputClass}
+                type="date"
+                name={field.name}
+                max={today}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+            </label>
+          )}
+        </form.Field>
+        <form.Field name="kind">
+          {(field) => (
+            <fieldset className="flex gap-4">
+              <legend className="mb-1 text-sm font-medium">種類</legend>
+              {kinds.map((kind) => (
+                <label key={kind} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name={field.name}
+                    value={kind}
+                    checked={field.state.value === kind}
+                    onBlur={field.handleBlur}
+                    onChange={() => field.handleChange(kind)}
+                  />
+                  {kind}
+                </label>
+              ))}
+            </fieldset>
+          )}
+        </form.Field>
+        <form.Field name="memo">
+          {(field) => (
+            <label className="flex flex-col gap-1 text-sm" htmlFor="nyushukkin-memo">
+              メモ
+              <input
+                id="nyushukkin-memo"
+                className={inputClass}
+                name={field.name}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+              />
+            </label>
+          )}
+        </form.Field>
         {error ? (
           <p className="text-sm text-red-700 dark:text-red-400" role="alert">
             {error}
           </p>
-        ) : null}
+        ) : (
+          <form.Subscribe selector={(state) => firstSubmitError(state.errorMap.onSubmit)}>
+            {(message) =>
+              message ? (
+                <p className="text-sm text-red-700 dark:text-red-400" role="alert">
+                  {message}
+                </p>
+              ) : null
+            }
+          </form.Subscribe>
+        )}
         <div className="flex gap-3">
           <button
             className="rounded bg-zinc-900 px-4 py-2 text-sm text-white dark:bg-zinc-100 dark:text-zinc-900"

@@ -1,3 +1,5 @@
+import * as v from "valibot";
+
 export const kinds = ["支出", "収入"] as const;
 export type Kind = (typeof kinds)[number];
 
@@ -20,6 +22,56 @@ export type NyushukkinResult<T> = { ok: true; value: T } | { ok: false; error: s
 
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 const amountPattern = /^\d+$/;
+const kindError = "収入か支出を選んでください";
+const amountError = "金額は1円以上の整数円です";
+const dateError = "入出日は今日以前の日付です";
+
+const kindSchema = v.picklist(kinds, kindError);
+const amountInputSchema = v.pipe(
+  v.string(),
+  v.trim(),
+  v.check((raw) => {
+    if (!amountPattern.test(raw)) {
+      return false;
+    }
+    const amount = Number(raw);
+    return Number.isSafeInteger(amount) && amount >= 1;
+  }, amountError),
+);
+const memoSchema = v.pipe(v.string(), v.trim());
+
+function dateInputSchema(today: string) {
+  return v.pipe(
+    v.string(),
+    v.trim(),
+    v.check((date) => {
+      if (!datePattern.test(date) || todayJst(new Date(`${date}T00:00:00+09:00`)) !== date) {
+        return false;
+      }
+      return date <= today;
+    }, dateError),
+  );
+}
+
+export function nyushukkinInputSchema(today: string) {
+  return v.object({
+    kind: kindSchema,
+    amount: amountInputSchema,
+    date: dateInputSchema(today),
+    memo: memoSchema,
+  });
+}
+
+function fromSchema<TSchema extends v.BaseSchema<unknown, unknown, v.BaseIssue<unknown>>>(
+  schema: TSchema,
+  input: unknown,
+): NyushukkinResult<v.InferOutput<TSchema>> {
+  const parsed = v.safeParse(schema, input);
+  if (parsed.success) {
+    return { ok: true, value: parsed.output };
+  }
+  return { ok: false, error: parsed.issues[0].message };
+}
 
 export function todayJst(now = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -56,37 +108,23 @@ export function nyushukkinInMonth(items: Nyushukkin[], month: string): Nyushukki
 }
 
 export function parseKind(raw: string): NyushukkinResult<Kind> {
-  if (raw === "支出" || raw === "収入") {
-    return { ok: true, value: raw };
-  }
-  return { ok: false, error: "収入か支出を選んでください" };
+  return fromSchema(kindSchema, raw);
 }
 
 export function parseAmount(raw: string): NyushukkinResult<number> {
-  const trimmed = raw.trim();
-  if (!amountPattern.test(trimmed)) {
-    return { ok: false, error: "金額は1円以上の整数円です" };
+  const parsed = fromSchema(amountInputSchema, raw);
+  if (!parsed.ok) {
+    return parsed;
   }
-  const amount = Number(trimmed);
-  if (!Number.isSafeInteger(amount) || amount < 1) {
-    return { ok: false, error: "金額は1円以上の整数円です" };
-  }
-  return { ok: true, value: amount };
+  return { ok: true, value: Number(parsed.value) };
 }
 
 export function parseDate(raw: string, today: string): NyushukkinResult<string> {
-  const date = raw.trim();
-  if (!datePattern.test(date) || todayJst(new Date(`${date}T00:00:00+09:00`)) !== date) {
-    return { ok: false, error: "入出日は今日以前の日付です" };
-  }
-  if (date > today) {
-    return { ok: false, error: "入出日は今日以前の日付です" };
-  }
-  return { ok: true, value: date };
+  return fromSchema(dateInputSchema(today), raw);
 }
 
 export function parseMemo(raw: string): string {
-  return raw.trim();
+  return v.parse(memoSchema, raw);
 }
 
 export function recordNyushukkin(
@@ -199,26 +237,18 @@ export function serializeStored(items: Nyushukkin[]): string {
 }
 
 function assemble(id: string, input: NyushukkinInput, today: string): NyushukkinResult<Nyushukkin> {
-  const kind = parseKind(input.kind);
-  if (!kind.ok) {
-    return kind;
-  }
-  const amount = parseAmount(input.amount);
-  if (!amount.ok) {
-    return amount;
-  }
-  const date = parseDate(input.date, today);
-  if (!date.ok) {
-    return date;
+  const parsed = fromSchema(nyushukkinInputSchema(today), input);
+  if (!parsed.ok) {
+    return parsed;
   }
   return {
     ok: true,
     value: {
       id,
-      kind: kind.value,
-      amount: amount.value,
-      date: date.value,
-      memo: parseMemo(input.memo),
+      kind: parsed.value.kind,
+      amount: Number(parsed.value.amount),
+      date: parsed.value.date,
+      memo: parsed.value.memo,
     },
   };
 }

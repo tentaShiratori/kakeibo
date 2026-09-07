@@ -39,3 +39,7 @@ wiki/
 
 # --- Turbo ---
 .turbo/
+
+# --- fallow ---
+# ローカルキャッシュ。解析結果の正は都度 `pnpm dead-code` で出す
+.fallow/

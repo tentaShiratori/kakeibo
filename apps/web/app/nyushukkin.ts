@@ -107,24 +107,12 @@ export function nyushukkinInMonth(items: Nyushukkin[], month: string): Nyushukki
   return items.filter((item) => calendarMonth(item.date) === month);
 }
 
-export function parseKind(raw: string): NyushukkinResult<Kind> {
+function parseKind(raw: string): NyushukkinResult<Kind> {
   return fromSchema(kindSchema, raw);
 }
 
-export function parseAmount(raw: string): NyushukkinResult<number> {
-  const parsed = fromSchema(amountInputSchema, raw);
-  if (!parsed.ok) {
-    return parsed;
-  }
-  return { ok: true, value: Number(parsed.value) };
-}
-
-export function parseDate(raw: string, today: string): NyushukkinResult<string> {
+function parseDate(raw: string, today: string): NyushukkinResult<string> {
   return fromSchema(dateInputSchema(today), raw);
-}
-
-export function parseMemo(raw: string): string {
-  return v.parse(memoSchema, raw);
 }
 
 export function recordNyushukkin(
@@ -191,11 +179,6 @@ export function sortNyushukkin(items: Nyushukkin[]): Nyushukkin[] {
     }
     return a.id < b.id ? 1 : -1;
   });
-}
-
-export function parseStored(raw: string | null): Nyushukkin[] {
-  const read = readStored(raw);
-  return read.ok ? read.value : [];
 }
 
 export function readStored(raw: string | null): NyushukkinResult<Nyushukkin[]> {

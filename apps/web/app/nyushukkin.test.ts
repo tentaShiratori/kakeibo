@@ -9,11 +9,6 @@ import {
   nyushukkinInMonth,
   nyushukkinInputSchema,
   loadStored,
-  parseAmount,
-  parseDate,
-  parseKind,
-  parseMemo,
-  parseStored,
   readStored,
   recordNyushukkin,
   removeNyushukkin,
@@ -26,55 +21,6 @@ import {
 } from "./nyushukkin";
 
 const today = "2026-09-06";
-
-describe("parseKind", () => {
-  test("収入と支出を受け取る", () => {
-    expect(parseKind("支出")).toEqual({ ok: true, value: "支出" });
-    expect(parseKind("収入")).toEqual({ ok: true, value: "収入" });
-  });
-
-  test("それ以外は受け取らない", () => {
-    expect(parseKind("取引").ok).toBe(false);
-    expect(parseKind("").ok).toBe(false);
-  });
-});
-
-describe("parseAmount", () => {
-  test("1円以上の整数円を受け取る", () => {
-    expect(parseAmount("1")).toEqual({ ok: true, value: 1 });
-    expect(parseAmount("5400")).toEqual({ ok: true, value: 5400 });
-    expect(parseAmount(" 12 ")).toEqual({ ok: true, value: 12 });
-  });
-
-  test("0円と負と小数は受け取らない", () => {
-    expect(parseAmount("0").ok).toBe(false);
-    expect(parseAmount("-1").ok).toBe(false);
-    expect(parseAmount("1.5").ok).toBe(false);
-    expect(parseAmount("").ok).toBe(false);
-    expect(parseAmount("1e2").ok).toBe(false);
-  });
-});
-
-describe("parseDate", () => {
-  test("今日以前の暦日を受け取る", () => {
-    expect(parseDate("2026-09-06", today)).toEqual({ ok: true, value: "2026-09-06" });
-    expect(parseDate("2026-09-05", today)).toEqual({ ok: true, value: "2026-09-05" });
-  });
-
-  test("未来と存在しない日は受け取らない", () => {
-    expect(parseDate("2026-09-07", today).ok).toBe(false);
-    expect(parseDate("2026-02-31", today).ok).toBe(false);
-    expect(parseDate("09-06", today).ok).toBe(false);
-    expect(parseDate("", today).ok).toBe(false);
-  });
-});
-
-describe("parseMemo", () => {
-  test("前後の空白を除き、空でもよい", () => {
-    expect(parseMemo(" コンビニ ")).toBe("コンビニ");
-    expect(parseMemo("   ")).toBe("");
-  });
-});
 
 describe("nyushukkinInputSchema", () => {
   test("正しい入力を受け取る", () => {
@@ -147,6 +93,94 @@ describe("nyushukkinInputSchema", () => {
         memo: "",
       }).success,
     ).toBe(true);
+  });
+
+  test("空の種類は受け取らない", () => {
+    expect(
+      v.safeParse(nyushukkinInputSchema(today), {
+        kind: "",
+        amount: "1",
+        date: today,
+        memo: "",
+      }).success,
+    ).toBe(false);
+  });
+
+  test("前後の空白を除いた金額と昨日の入出日を受け取る", () => {
+    const parsed = v.safeParse(nyushukkinInputSchema(today), {
+      kind: "支出",
+      amount: " 12 ",
+      date: "2026-09-05",
+      memo: "",
+    });
+    expect(parsed).toMatchObject({
+      success: true,
+      output: { amount: "12", date: "2026-09-05" },
+    });
+  });
+
+  test("負と小数と指数表記の金額は受け取らない", () => {
+    expect(
+      v.safeParse(nyushukkinInputSchema(today), {
+        kind: "支出",
+        amount: "-1",
+        date: today,
+        memo: "",
+      }).success,
+    ).toBe(false);
+    expect(
+      v.safeParse(nyushukkinInputSchema(today), {
+        kind: "支出",
+        amount: "1.5",
+        date: today,
+        memo: "",
+      }).success,
+    ).toBe(false);
+    expect(
+      v.safeParse(nyushukkinInputSchema(today), {
+        kind: "支出",
+        amount: "1e2",
+        date: today,
+        memo: "",
+      }).success,
+    ).toBe(false);
+  });
+
+  test("存在しない日と形式が違う日と空の入出日は受け取らない", () => {
+    expect(
+      v.safeParse(nyushukkinInputSchema(today), {
+        kind: "支出",
+        amount: "1",
+        date: "2026-02-31",
+        memo: "",
+      }).success,
+    ).toBe(false);
+    expect(
+      v.safeParse(nyushukkinInputSchema(today), {
+        kind: "支出",
+        amount: "1",
+        date: "09-06",
+        memo: "",
+      }).success,
+    ).toBe(false);
+    expect(
+      v.safeParse(nyushukkinInputSchema(today), {
+        kind: "支出",
+        amount: "1",
+        date: "",
+        memo: "",
+      }).success,
+    ).toBe(false);
+  });
+
+  test("空白だけのメモは空にする", () => {
+    const parsed = v.safeParse(nyushukkinInputSchema(today), {
+      kind: "支出",
+      amount: "1",
+      date: today,
+      memo: "   ",
+    });
+    expect(parsed).toMatchObject({ success: true, output: { memo: "" } });
   });
 });
 
@@ -252,11 +286,11 @@ describe("monthTotals", () => {
   });
 });
 
-describe("parseStored / loadStored", () => {
+describe("readStored / loadStored", () => {
   test("空と壊れた値は空の帳簿にする", () => {
-    expect(parseStored(null)).toEqual([]);
-    expect(parseStored("nope")).toEqual([]);
-    expect(parseStored("{}")).toEqual([]);
+    expect(loadStored(null, null)).toEqual([]);
+    expect(loadStored("nope", null)).toEqual([]);
+    expect(loadStored("{}", null)).toEqual([]);
   });
 
   test("形が正しい入出金だけ残す", () => {
@@ -264,7 +298,7 @@ describe("parseStored / loadStored", () => {
       { id: "a", kind: "支出", amount: 1, date: "2026-09-06", memo: "" },
       { id: "b", kind: "取引", amount: 1, date: "2026-09-06", memo: "" },
     ];
-    expect(parseStored(serializeStored(items as never))).toEqual([items[0]]);
+    expect(readStored(serializeStored(items as never))).toEqual({ ok: true, value: [items[0]] });
   });
 
   test("壊れた帳簿はひとつ前から戻す", () => {
@@ -280,10 +314,6 @@ describe("parseStored / loadStored", () => {
   test("帳簿が無ければひとつ前を使う", () => {
     const items = [{ id: "a", kind: "支出" as const, amount: 1, date: "2026-09-06", memo: "" }];
     expect(loadStored(null, serializeStored(items))).toEqual(items);
-  });
-
-  test("両方無ければ空", () => {
-    expect(loadStored(null, null)).toEqual([]);
   });
 
   test("配列だけを帳簿として読む", () => {

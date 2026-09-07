@@ -1,0 +1,10 @@
+{
+  "$schema": "./node_modules/fallow/schema.json",
+  // Cursor フックは隠しディレクトリのため、解析対象外にする
+  "ignorePatterns": [".cursor/**"],
+  // `skills` はエージェント用 CLI。ソースからは import しない
+  "ignoreDependencies": ["skills"],
+  "workspaces": {
+    "patterns": ["apps/*", "packages/*"]
+  }
+}

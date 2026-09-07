@@ -39,6 +39,7 @@
 - 2026-09-07: 金額の数値化は Valibot の `toNumber`。スキーマの出力を使い、パース後の `Number` は置かない
 - 2026-09-07: 不要コードは fallow。テスト専用の export は本番に置かない。CI は `fallow dead-code` と `--production` の両方。`skills` は CLI なので ignore。warn 系は advisory のまま
 - 2026-09-07: api の入出金は web と同じ形（収入または支出、金額、入出日、メモ）。id は api が付ける。保存はプロセスに一冊のファイル。web の正本はまだブラウザ。認証も DB も枠もやらない
+- 2026-09-07: api のドメインモデルは `internal/domain/model`。HTTP とファイル保存は `cmd/server` に残す
 
 ## 次のセッションで対応すること
 

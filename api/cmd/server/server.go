@@ -5,6 +5,8 @@ import (
 	"errors"
 	"net/http"
 	"time"
+
+	"github.com/tentaShiratori/kakeibo/api/internal/domain/model"
 )
 
 type server struct {
@@ -29,7 +31,7 @@ func (s *server) record(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	item, err := recordNyushukkin(input, todayJST(s.now()), s.newID())
+	item, err := model.RecordNyushukkin(input, model.TodayJST(s.now()), s.newID())
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -48,8 +50,8 @@ func (s *server) correct(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	current := Nyushukkin{ID: id}
-	item, err := correctNyushukkin(current, input, todayJST(s.now()))
+	current := model.Nyushukkin{ID: id}
+	item, err := model.CorrectNyushukkin(current, input, model.TodayJST(s.now()))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -71,7 +73,7 @@ func (s *server) remove(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) list(w http.ResponseWriter, r *http.Request) {
-	month, err := parseMonth(r.URL.Query().Get("month"))
+	month, err := model.ParseMonth(r.URL.Query().Get("month"))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -79,19 +81,19 @@ func (s *server) list(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, s.book.List(month))
 }
 
-func decodeInput(r *http.Request) (nyushukkinInput, error) {
+func decodeInput(r *http.Request) (model.NyushukkinInput, error) {
 	defer r.Body.Close()
 	dec := json.NewDecoder(r.Body)
 	dec.UseNumber()
-	var input nyushukkinInput
+	var input model.NyushukkinInput
 	if err := dec.Decode(&input); err != nil {
-		return nyushukkinInput{}, validateError{"入力が読めません"}
+		return model.NyushukkinInput{}, errors.New("入力が読めません")
 	}
 	return input, nil
 }
 
 func writeBookError(w http.ResponseWriter, err error) {
-	if errors.Is(err, errNotFound) {
+	if errors.Is(err, model.ErrNotFound) {
 		writeError(w, http.StatusNotFound, err.Error())
 		return
 	}

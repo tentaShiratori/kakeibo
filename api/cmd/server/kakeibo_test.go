@@ -4,12 +4,14 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/tentaShiratori/kakeibo/api/internal/domain/model"
 )
 
 func TestKakeiboPersistAndReload(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "kakeibo.json")
 	book := OpenKakeibo(path)
-	item := Nyushukkin{ID: "a", Kind: "支出", Amount: 5000, Date: "2026-09-06", Memo: "米"}
+	item := model.Nyushukkin{ID: "a", Kind: "支出", Amount: 5000, Date: "2026-09-06", Memo: "米"}
 	if err := book.Record(item); err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +33,7 @@ func TestKakeiboMissingFileIsEmpty(t *testing.T) {
 func TestKakeiboBrokenFileUsesBackup(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "kakeibo.json")
-	item := Nyushukkin{ID: "a", Kind: "支出", Amount: 1, Date: "2026-09-06", Memo: ""}
+	item := model.Nyushukkin{ID: "a", Kind: "支出", Amount: 1, Date: "2026-09-06", Memo: ""}
 	if err := os.WriteFile(path+".bak", []byte(`[{"id":"a","kind":"支出","amount":1,"date":"2026-09-06","memo":""}]`), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -75,8 +77,8 @@ func TestKakeiboSkipsInvalidRows(t *testing.T) {
 func TestKakeiboCorrectAndRemove(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "kakeibo.json")
 	book := OpenKakeibo(path)
-	a := Nyushukkin{ID: "a", Kind: "支出", Amount: 5000, Date: "2026-09-06", Memo: ""}
-	b := Nyushukkin{ID: "b", Kind: "収入", Amount: 2000, Date: "2026-09-01", Memo: ""}
+	a := model.Nyushukkin{ID: "a", Kind: "支出", Amount: 5000, Date: "2026-09-06", Memo: ""}
+	b := model.Nyushukkin{ID: "b", Kind: "収入", Amount: 2000, Date: "2026-09-01", Memo: ""}
 	if err := book.Record(a); err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +95,7 @@ func TestKakeiboCorrectAndRemove(t *testing.T) {
 	if _, err := book.Remove("z"); err == nil {
 		t.Fatal("expected missing remove to fail")
 	}
-	if err := book.Correct(Nyushukkin{ID: "z", Kind: "支出", Amount: 1, Date: "2026-09-06"}); err == nil {
+	if err := book.Correct(model.Nyushukkin{ID: "z", Kind: "支出", Amount: 1, Date: "2026-09-06"}); err == nil {
 		t.Fatal("expected missing correct to fail")
 	}
 

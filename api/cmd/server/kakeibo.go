@@ -5,22 +5,24 @@ import (
 	"errors"
 	"os"
 	"sync"
+
+	"github.com/tentaShiratori/kakeibo/api/internal/domain/model"
 )
 
 type Kakeibo struct {
 	mu    sync.Mutex
 	path  string
-	items []Nyushukkin
+	items []model.Nyushukkin
 }
 
 func OpenKakeibo(path string) *Kakeibo {
 	return &Kakeibo{path: path, items: loadBook(path)}
 }
 
-func (k *Kakeibo) Record(item Nyushukkin) error {
+func (k *Kakeibo) Record(item model.Nyushukkin) error {
 	k.mu.Lock()
 	defer k.mu.Unlock()
-	next := append(append([]Nyushukkin{}, k.items...), item)
+	next := append(append([]model.Nyushukkin{}, k.items...), item)
 	if err := saveBook(k.path, next); err != nil {
 		return err
 	}
@@ -28,10 +30,10 @@ func (k *Kakeibo) Record(item Nyushukkin) error {
 	return nil
 }
 
-func (k *Kakeibo) Correct(item Nyushukkin) error {
+func (k *Kakeibo) Correct(item model.Nyushukkin) error {
 	k.mu.Lock()
 	defer k.mu.Unlock()
-	next := append([]Nyushukkin{}, k.items...)
+	next := append([]model.Nyushukkin{}, k.items...)
 	found := false
 	for i, current := range next {
 		if current.ID == item.ID {
@@ -41,7 +43,7 @@ func (k *Kakeibo) Correct(item Nyushukkin) error {
 		}
 	}
 	if !found {
-		return errNotFound
+		return model.ErrNotFound
 	}
 	if err := saveBook(k.path, next); err != nil {
 		return err
@@ -50,27 +52,27 @@ func (k *Kakeibo) Correct(item Nyushukkin) error {
 	return nil
 }
 
-func (k *Kakeibo) Remove(id string) (Nyushukkin, error) {
+func (k *Kakeibo) Remove(id string) (model.Nyushukkin, error) {
 	k.mu.Lock()
 	defer k.mu.Unlock()
-	next, removed, err := removeNyushukkin(k.items, id)
+	next, removed, err := model.RemoveNyushukkin(k.items, id)
 	if err != nil {
-		return Nyushukkin{}, err
+		return model.Nyushukkin{}, err
 	}
 	if err := saveBook(k.path, next); err != nil {
-		return Nyushukkin{}, err
+		return model.Nyushukkin{}, err
 	}
 	k.items = next
 	return removed, nil
 }
 
-func (k *Kakeibo) List(month string) []Nyushukkin {
+func (k *Kakeibo) List(month string) []model.Nyushukkin {
 	k.mu.Lock()
 	defer k.mu.Unlock()
-	return sortNyushukkin(nyushukkinInMonth(k.items, month))
+	return model.SortNyushukkin(model.NyushukkinInMonth(k.items, month))
 }
 
-func loadBook(path string) []Nyushukkin {
+func loadBook(path string) []model.Nyushukkin {
 	items, ok := readStoredFile(path)
 	if ok {
 		return items
@@ -79,10 +81,10 @@ func loadBook(path string) []Nyushukkin {
 	if ok {
 		return items
 	}
-	return []Nyushukkin{}
+	return []model.Nyushukkin{}
 }
 
-func readStoredFile(path string) ([]Nyushukkin, bool) {
+func readStoredFile(path string) ([]model.Nyushukkin, bool) {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, false
@@ -90,7 +92,7 @@ func readStoredFile(path string) ([]Nyushukkin, bool) {
 	return readStored(raw)
 }
 
-func readStored(raw []byte) ([]Nyushukkin, bool) {
+func readStored(raw []byte) ([]model.Nyushukkin, bool) {
 	var parsed any
 	if err := json.Unmarshal(raw, &parsed); err != nil {
 		return nil, false
@@ -99,16 +101,16 @@ func readStored(raw []byte) ([]Nyushukkin, bool) {
 	if !ok {
 		return nil, false
 	}
-	items := make([]Nyushukkin, 0, len(rows))
+	items := make([]model.Nyushukkin, 0, len(rows))
 	for _, row := range rows {
-		if item, ok := asNyushukkin(row); ok {
+		if item, ok := model.AsNyushukkin(row); ok {
 			items = append(items, item)
 		}
 	}
 	return items, true
 }
 
-func saveBook(path string, items []Nyushukkin) error {
+func saveBook(path string, items []model.Nyushukkin) error {
 	next, err := json.Marshal(items)
 	if err != nil {
 		return err

@@ -1,10 +1,5 @@
 import { parseDate, parseKind, type Nyushukkin, type NyushukkinResult } from "./nyushukkin";
 
-export function parseStored(raw: string | null): Nyushukkin[] {
-  const read = readStored(raw);
-  return read.ok ? read.value : [];
-}
-
 export function readStored(raw: string | null): NyushukkinResult<Nyushukkin[]> {
   if (raw == null) {
     return { ok: false, error: "帳簿がありません" };

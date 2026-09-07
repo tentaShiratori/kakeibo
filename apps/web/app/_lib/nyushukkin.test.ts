@@ -1,12 +1,5 @@
 import { describe, expect, test } from "vitest";
-import {
-  correctNyushukkin,
-  parseAmount,
-  parseDate,
-  parseKind,
-  parseMemo,
-  recordNyushukkin,
-} from "./nyushukkin";
+import { correctNyushukkin, parseDate, parseKind, recordNyushukkin } from "./nyushukkin";
 
 const today = "2026-09-06";
 
@@ -22,24 +15,6 @@ describe("parseKind", () => {
   });
 });
 
-describe("parseAmount", () => {
-  test("1円以上の整数円を受け取る", () => {
-    expect(parseAmount("1")).toEqual({ ok: true, value: 1 });
-    expect(parseAmount("5400")).toEqual({ ok: true, value: 5400 });
-    expect(parseAmount(" 12 ")).toEqual({ ok: true, value: 12 });
-    expect(parseAmount("9007199254740991")).toEqual({ ok: true, value: 9007199254740991 });
-  });
-
-  test("0円と負と小数は受け取らない", () => {
-    expect(parseAmount("0").ok).toBe(false);
-    expect(parseAmount("-1").ok).toBe(false);
-    expect(parseAmount("1.5").ok).toBe(false);
-    expect(parseAmount("").ok).toBe(false);
-    expect(parseAmount("1e2").ok).toBe(false);
-    expect(parseAmount("9007199254740993").ok).toBe(false);
-  });
-});
-
 describe("parseDate", () => {
   test("今日以前の暦日を受け取る", () => {
     expect(parseDate("2026-09-06", today)).toEqual({ ok: true, value: "2026-09-06" });
@@ -51,13 +26,6 @@ describe("parseDate", () => {
     expect(parseDate("2026-02-31", today).ok).toBe(false);
     expect(parseDate("09-06", today).ok).toBe(false);
     expect(parseDate("", today).ok).toBe(false);
-  });
-});
-
-describe("parseMemo", () => {
-  test("前後の空白を除き、空でもよい", () => {
-    expect(parseMemo(" コンビニ ")).toBe("コンビニ");
-    expect(parseMemo("   ")).toBe("");
   });
 });
 

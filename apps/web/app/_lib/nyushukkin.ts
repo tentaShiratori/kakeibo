@@ -86,16 +86,8 @@ export function parseKind(raw: string): NyushukkinResult<Kind> {
   return fromSchema(kindSchema, raw);
 }
 
-export function parseAmount(raw: string): NyushukkinResult<number> {
-  return fromSchema(amountInputSchema, raw);
-}
-
 export function parseDate(raw: string, today: string): NyushukkinResult<string> {
   return fromSchema(dateInputSchema(today), raw);
-}
-
-export function parseMemo(raw: string): string {
-  return v.parse(memoSchema, raw);
 }
 
 export function recordNyushukkin(

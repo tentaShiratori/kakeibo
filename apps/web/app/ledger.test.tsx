@@ -17,6 +17,11 @@ beforeEach(() => {
   window.localStorage.clear();
 });
 
+test("入出金が無いときは空だと分かる", () => {
+  render(<Ledger />);
+  expect(screen.getByText("まだ入出金がありません")).toBeDefined();
+});
+
 test("壊れた保存はひとつ前の帳簿を出す", () => {
   const today = todayJst();
   window.localStorage.setItem(

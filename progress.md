@@ -1,6 +1,6 @@
 ## 現在の状態
 
-- 実装済み: apps/web の入出金記録（金額・入出日・メモ、直す・消す、戻す、暦月の収支と一覧、壊れた保存のひとつ前）、ドメイン（CONTEXT.md / ADR-0001〜0013）、oxlint / oxfmt / vitest、apps/app 初期テンプレ、api Hello World、GitHub の issue / PR テンプレート
+- 実装済み: apps/web の入出金記録（金額・入出日・メモ、直す・消す、戻す、暦月の収支と一覧、壊れた保存のひとつ前）、ドメイン（CONTEXT.md / ADR-0001〜0013）、oxlint / oxfmt / vitest、apps/app 初期テンプレ、api Hello World、GitHub の issue / PR テンプレート、Dependabot の週次更新
 - 作業中: なし
 - 未着手: 枠の名前、入出金の API / app 側、端末をまたぐ同じ一冊
 
@@ -29,6 +29,7 @@
 - 2026-09-07: 帳簿が壊れたらひとつ前を出す。空の帳簿は壊れていない
 - 2026-09-07: PMは降りる。既存PRを完成させて止める
 - 2026-09-07: GitHub の issue は不具合と機能のフォーム、PR は `.github/PULL_REQUEST_TEMPLATE.md` の単一テンプレート。空の issue も残す
+- 2026-09-07: 依存の自動更新は Dependabot（Renovate はアプリ追加が要るので見送り）。npm / gomod / cargo / github-actions を週次。lint・test とその他の非メジャーをグループ化。メジャーは別 PR。自動マージはしない
 
 ## 次のセッションで対応すること
 

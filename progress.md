@@ -1,8 +1,8 @@
 ## 現在の状態
 
-- 実装済み: apps/web の入出金記録（金額・入出日・メモ、直す・消す、戻す、暦月の収支と一覧、壊れた保存のひとつ前）、Jotai の atomWithStorage によるブラウザ保存、TanStack Form と Valibot による入力検証、ドメイン（CONTEXT.md / ADR-0001〜0013）、oxlint / oxfmt / vitest、apps/app 初期テンプレ、api Hello World、GitHub の issue / PR テンプレート、Dependabot の週次更新、PR / main の CI、Dependabot の minor / patch は CI 通過後に自動マージ、fallow による不要コード検査
-- 作業中: なし
-- 未着手: 枠の名前、入出金の API / app 側、端末をまたぐ同じ一冊
+- 実装済み: apps/web の入出金記録（金額・入出日・メモ、直す・消す、戻す、暦月の収支と一覧、壊れた保存のひとつ前）、Jotai の atomWithStorage によるブラウザ保存、TanStack Form と Valibot による入力検証、ドメイン（CONTEXT.md / ADR-0001〜0013）、oxlint / oxfmt / vitest、apps/app 初期テンプレ、api の入出金（記録・直す・消す・暦月の一覧、ファイル一冊、認証なし）、GitHub の issue / PR テンプレート、Dependabot の週次更新、PR / main の CI、Dependabot の minor / patch は CI 通過後に自動マージ、fallow による不要コード検査
+- 作業中: api に入出金を載せる（#22）
+- 未着手: 枠の名前、web から api への接続、apps/app の入出金、端末をまたぐ同じ一冊
 
 ## 意思決定ログ
 
@@ -38,9 +38,11 @@
 - 2026-09-07: ブラウザ保存は Jotai の `atomWithStorage`。キーと壊れた保存のひとつ前（`.bak`）は変えない。消した入出金の戻すは画面にいる間だけなので atom に載せない
 - 2026-09-07: 金額の数値化は Valibot の `toNumber`。スキーマの出力を使い、パース後の `Number` は置かない
 - 2026-09-07: 不要コードは fallow。テスト専用の export は本番に置かない。CI は `fallow dead-code` と `--production` の両方。`skills` は CLI なので ignore。warn 系は advisory のまま
+- 2026-09-07: api の入出金は web と同じ形（収入または支出、金額、入出日、メモ）。id は api が付ける。保存はプロセスに一冊のファイル。web の正本はまだブラウザ。認証も DB も枠もやらない
 
 ## 次のセッションで対応すること
 
 - 枠の名前はまだ開かない
-- 入出金を api / app に載せるかは開かない
+- web から api への接続、正本の移動はまだ開かない
+- apps/app に入出金はまだ載せない
 - 名簿と端末をまたぐ同じ一冊は、一人で書く記録が成立してから

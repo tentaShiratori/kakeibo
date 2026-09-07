@@ -84,15 +84,15 @@ describe("nyushukkinInputSchema", () => {
       date: today,
       memo: " 給料 ",
     });
-    expect(parsed.success).toBe(true);
-    if (parsed.success) {
-      expect(parsed.output).toEqual({
+    expect(parsed).toMatchObject({
+      success: true,
+      output: {
         kind: "収入",
         amount: "1",
         date: today,
         memo: "給料",
-      });
-    }
+      },
+    });
   });
 
   test("種類と金額と入出日が欠けたら受け取らない", () => {

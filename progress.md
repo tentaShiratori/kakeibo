@@ -1,7 +1,7 @@
 ## 現在の状態
 
 - 実装済み: apps/web の入出金記録（金額・入出日・メモ、直す・消す、戻す、暦月の収支と一覧、壊れた保存のひとつ前）、Jotai の atomWithStorage によるブラウザ保存、TanStack Form と Valibot による入力検証、ドメイン（CONTEXT.md / ADR-0001〜0013）、oxlint / oxfmt / vitest、apps/app 初期テンプレ、api の入出金（記録・直す・消す・暦月の一覧、ファイル一冊、認証なし）、GitHub の issue / PR テンプレート、Dependabot の週次更新、PR / main の CI、Dependabot の minor / patch は CI 通過後に自動マージ、fallow による不要コード検査
-- 作業中: api に入出金を載せる（#22）
+- 作業中: なし
 - 未着手: 枠の名前、web から api への接続、apps/app の入出金、端末をまたぐ同じ一冊
 
 ## 意思決定ログ

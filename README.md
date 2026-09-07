@@ -15,10 +15,9 @@
 
 ```bash
 mise install
-lefthook install
 ```
 
-`lefthook install` は初回だけ。以後、`git commit` で触ったファイルに oxfmt / oxlint（Go なら gofmt）が走る。typecheck とテストは CI。
+`mise install` のあと、mise の postinstall hook が lefthook install を実行する。以後、`git commit` で触ったファイルに oxfmt / oxlint（Go なら gofmt）が走る。typecheck とテストは CI。
 
 Cursor はスタートメニューやタスクバーから開かない。Go 拡張は [VS Code プロセスから継承した PATH を使う](https://github.com/golang/vscode-go/issues/1823#issuecomment-933506078) ため、mise が入ったターミナルから起動する
 

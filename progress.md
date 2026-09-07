@@ -45,6 +45,7 @@
 - 2026-09-07: web のテスト描画は `apps/web/test/renderApp`。Provider は `AppProviders` に足す。コンポーネントテストの `render` は `renderApp` に置き換えた。`renderHook` はそのまま
 - 2026-09-07: turbo の一括テストは `test:run`。パッケージの `test` は vitest（`pnpm test run {ファイル}` 用）。ルートの `pnpm test` は `turbo run test:run`
 - 2026-09-07: lefthook の pre-commit は触ったファイルの oxfmt / oxlint（Go なら gofmt）だけ。typecheck とテストは CI。husky / lint-staged は入れない。oxlint は apps/web と apps/app の cwd で回し、パッケージの設定を使う
+- 2026-09-07: lefthook install は mise の postinstall hook が実行する。README に手で lefthook install とは書かない。lefthook が PATH にない環境（CI の部分 install）ではスキップする
 
 ## 次のセッションで対応すること
 

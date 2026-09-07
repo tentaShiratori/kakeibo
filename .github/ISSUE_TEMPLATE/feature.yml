@@ -1,0 +1,51 @@
+name: 機能
+description: 新しい動きや足したい仕事を提案する
+title: "[機能] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        用語は `CONTEXT.md` に合わせる。新しい呼び方が要るなら、先に用語を決める。
+  - type: dropdown
+    id: surface
+    attributes:
+      label: 面
+      description: 載せる場所。まだ決まっていなければ「わからない」
+      options:
+        - apps/web
+        - apps/app
+        - api
+        - わからない
+    validations:
+      required: true
+  - type: textarea
+    id: want
+    attributes:
+      label: 欲しい動き
+      description: 誰が、何を、どうできるようになるか
+      placeholder: 例）暦月の振り返りで、収入合計・支出合計・収支を同じ月で見られる
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: なぜ今か
+      description: 無いと困る場面。任意。
+    validations:
+      required: false
+  - type: textarea
+    id: done
+    attributes:
+      label: これで足りる
+      description: 満たせば終わり、と言える条件
+      placeholder: 例）今週の実費を残せて、同じブラウザで翌週も見られる
+    validations:
+      required: true
+  - type: textarea
+    id: out
+    attributes:
+      label: やらないこと
+      description: 今回は開かない範囲。任意。
+      placeholder: 例）枠の名前、api、app
+    validations:
+      required: false

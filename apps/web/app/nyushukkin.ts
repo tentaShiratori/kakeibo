@@ -156,13 +156,18 @@ export function sortNyushukkin(items: Nyushukkin[]): Nyushukkin[] {
 }
 
 export function parseStored(raw: string | null): Nyushukkin[] {
-  if (!raw) {
-    return [];
+  const read = readStored(raw);
+  return read.ok ? read.value : [];
+}
+
+export function readStored(raw: string | null): NyushukkinResult<Nyushukkin[]> {
+  if (raw == null) {
+    return { ok: false, error: "帳簿がありません" };
   }
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) {
-      return [];
+      return { ok: false, error: "帳簿が壊れています" };
     }
     const items: Nyushukkin[] = [];
     for (const row of parsed) {
@@ -171,10 +176,22 @@ export function parseStored(raw: string | null): Nyushukkin[] {
         items.push(item);
       }
     }
-    return items;
+    return { ok: true, value: items };
   } catch {
-    return [];
+    return { ok: false, error: "帳簿が壊れています" };
   }
+}
+
+export function loadStored(primary: string | null, backup: string | null): Nyushukkin[] {
+  const main = readStored(primary);
+  if (main.ok) {
+    return main.value;
+  }
+  const prev = readStored(backup);
+  if (prev.ok) {
+    return prev.value;
+  }
+  return [];
 }
 
 export function serializeStored(items: Nyushukkin[]): string {

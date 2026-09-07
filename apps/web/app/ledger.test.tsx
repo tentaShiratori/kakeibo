@@ -17,9 +17,15 @@ beforeEach(() => {
   window.localStorage.clear();
 });
 
-test("入出金が無いときは空だと分かる", () => {
+test("壊れた保存はひとつ前の帳簿を出す", () => {
+  const today = todayJst();
+  window.localStorage.setItem(
+    "kakeibo.nyushukkin.bak",
+    serializeStored([{ id: "a", kind: "支出", amount: 5000, date: today, memo: "" }]),
+  );
+  window.localStorage.setItem("kakeibo.nyushukkin", "nope");
   render(<Ledger />);
-  expect(screen.getByText("まだ入出金がありません")).toBeDefined();
+  expect(screen.getByText(`${today} 支出 5,000円`)).toBeDefined();
 });
 
 test("金額と入出日で支出を記録できる", () => {

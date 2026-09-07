@@ -7,13 +7,14 @@ import {
   formatCalendarMonth,
   isCurrentOrPastMonth,
   kinds,
+  loadStored,
   monthTotals,
   nyushukkinInMonth,
-  parseStored,
   recordNyushukkin,
   removeNyushukkin,
   replaceNyushukkin,
   restoreNyushukkin,
+  readStored,
   serializeStored,
   shiftCalendarMonth,
   sortNyushukkin,
@@ -23,6 +24,7 @@ import {
 } from "./nyushukkin";
 
 const storageKey = "kakeibo.nyushukkin";
+const backupKey = "kakeibo.nyushukkin.bak";
 const listeners = new Set<() => void>();
 
 function subscribe(onChange: () => void) {
@@ -33,13 +35,38 @@ function subscribe(onChange: () => void) {
 }
 
 function snapshot() {
-  return window.localStorage.getItem(storageKey);
+  return JSON.stringify([
+    window.localStorage.getItem(storageKey),
+    window.localStorage.getItem(backupKey),
+  ]);
 }
 
 function persist(items: Nyushukkin[]) {
+  const current = window.localStorage.getItem(storageKey);
+  if (current !== null && readStored(current).ok) {
+    window.localStorage.setItem(backupKey, current);
+  }
   window.localStorage.setItem(storageKey, serializeStored(items));
   for (const listener of listeners) {
     listener();
+  }
+}
+
+function itemsFromSnapshot(raw: string | null): Nyushukkin[] {
+  if (!raw) {
+    return [];
+  }
+  try {
+    const pair: unknown = JSON.parse(raw);
+    if (!Array.isArray(pair) || pair.length !== 2) {
+      return [];
+    }
+    return loadStored(
+      typeof pair[0] === "string" ? pair[0] : null,
+      typeof pair[1] === "string" ? pair[1] : null,
+    );
+  } catch {
+    return [];
   }
 }
 
@@ -56,7 +83,7 @@ function yen(amount: number): string {
 
 export function Ledger() {
   const today = todayJst();
-  const items = parseStored(useSyncExternalStore(subscribe, snapshot, () => null));
+  const items = itemsFromSnapshot(useSyncExternalStore(subscribe, snapshot, () => null));
   const amountRef = useRef<HTMLInputElement>(null);
   const [month, setMonth] = useState(calendarMonth(today));
   const [input, setInput] = useState<NyushukkinInput>(emptyInput(today));

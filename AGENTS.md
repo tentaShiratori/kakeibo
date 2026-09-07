@@ -34,3 +34,4 @@ better-code-review-graph の `query`（`action=search`）が0件 → `/graphify 
 - 機能追加は `add-feature` スキル、テスト追加は `write-test` スキルに従う
 - `progress.md` はセッション開始フックが注入する。意思決定・作業完了時に更新する
 - 不要コードは `pnpm dead-code`（fallow）。テストでしか使わないコードは `*.test.ts` かリポジトリ直下の `test/` に置く
+- PR は issue の Development に載せる。本文に `Closes #番号` を書く。`#番号` だけの言及では載らない。Dependabot 以外はリンクなしでチェックが落ちる

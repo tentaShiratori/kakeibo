@@ -7,7 +7,7 @@ alwaysApply: true
 
 - `apps/web` — Next.js 16（App Router）。コードを書く前に `apps/web/node_modules/next/dist/docs/` を読む
 - `apps/app` — Tauri + React + Vite
-- `api` — Go。プロセス入口は `cmd/`。それ以外は `internal/`（`internals/` は置かない）
+- `api` — Go。プロセス入口は `cmd/`。それ以外は `internal/`
 - `packages` — 共有パッケージ置き場。今は空
 
 `apps/web` の各 `page.tsx` と同じフォルダに `_lib/` を置く。予約ファイルと、ルート `layout.tsx` が読む `globals.css` はセグメント直下。ページ用のコンポーネント・フック・純関数・テストは `_lib/`。子ルートは自分の `_lib` を持つ。

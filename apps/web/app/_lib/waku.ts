@@ -8,7 +8,7 @@ export type Waku = {
 
 const nameError = "名前を入れてください";
 
-export function wakuNameSchema() {
+function wakuNameSchema() {
   return v.pipe(v.string(), v.trim(), v.minLength(1, nameError));
 }
 

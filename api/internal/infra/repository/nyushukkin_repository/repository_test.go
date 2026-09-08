@@ -24,6 +24,21 @@ func TestPersistAndReload(t *testing.T) {
 	}
 }
 
+func TestPersistWakuID(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "kakeibo.json")
+	file := book_file.Open(path)
+	repo := New(file)
+	item := nyushukkin.Nyushukkin{ID: "a", Kind: "支出", Amount: 1, Date: "2026-09-06", Memo: "", WakuID: "w1"}
+	if err := repo.Record(item); err != nil {
+		t.Fatal(err)
+	}
+	reloaded := New(book_file.Open(path))
+	got := reloaded.All()
+	if len(got) != 1 || got[0].WakuID != "w1" {
+		t.Fatalf("got %+v", got)
+	}
+}
+
 func TestMissingFileIsEmpty(t *testing.T) {
 	repo := New(book_file.Open(filepath.Join(t.TempDir(), "missing.json")))
 	if got := repo.All(); len(got) != 0 {

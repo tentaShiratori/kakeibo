@@ -11,30 +11,30 @@ func Correct(current Nyushukkin, input Input, today string) (Nyushukkin, error) 
 }
 
 func assemble(id string, input Input, today string) (Nyushukkin, error) {
-	kind, amount, date, memo, err := parseInput(input, today)
+	kind, amount, date, memo, wakuID, err := parseInput(input, today)
 	if err != nil {
 		return Nyushukkin{}, err
 	}
-	return Nyushukkin{ID: id, Kind: kind, Amount: amount, Date: date, Memo: memo}, nil
+	return Nyushukkin{ID: id, Kind: kind, Amount: amount, Date: date, Memo: memo, WakuID: wakuID}, nil
 }
 
-func parseInput(input Input, today string) (kind string, amount int64, date string, memo string, err error) {
+func parseInput(input Input, today string) (kind string, amount int64, date string, memo string, wakuID string, err error) {
 	kind, err = parseKind(input.Kind)
 	if err != nil {
-		return "", 0, "", "", err
+		return "", 0, "", "", "", err
 	}
 	amount, err = parseAmount(input.Amount)
 	if err != nil {
-		return "", 0, "", "", err
+		return "", 0, "", "", "", err
 	}
 	date, err = parseDate(input.Date, today)
 	if err != nil {
-		return "", 0, "", "", err
+		return "", 0, "", "", "", err
 	}
 	if input.Memo != nil {
 		memo = strings.TrimSpace(*input.Memo)
 	}
-	return kind, amount, date, memo, nil
+	return kind, amount, date, memo, strings.TrimSpace(input.WakuID), nil
 }
 
 func Remove(items []Nyushukkin, id string) ([]Nyushukkin, Nyushukkin, error) {
@@ -80,7 +80,22 @@ func FromStored(row any) (Nyushukkin, bool) {
 	if !ok {
 		return Nyushukkin{}, false
 	}
-	return Nyushukkin{ID: id, Kind: kind, Amount: amount, Date: date, Memo: memo}, true
+	wakuID, ok := storedWakuID(rec["wakuId"])
+	if !ok {
+		return Nyushukkin{}, false
+	}
+	return Nyushukkin{ID: id, Kind: kind, Amount: amount, Date: date, Memo: memo, WakuID: wakuID}, true
+}
+
+func storedWakuID(v any) (string, bool) {
+	if v == nil {
+		return "", true
+	}
+	s, ok := v.(string)
+	if !ok {
+		return "", false
+	}
+	return strings.TrimSpace(s), true
 }
 
 func asString(v any) string {

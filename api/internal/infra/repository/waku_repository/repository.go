@@ -1,6 +1,7 @@
 package waku_repository
 
 import (
+	"github.com/tentaShiratori/kakeibo/api/internal/domain/model/nyushukkin"
 	"github.com/tentaShiratori/kakeibo/api/internal/domain/model/waku"
 	"github.com/tentaShiratori/kakeibo/api/internal/infra/repository/book_file"
 )
@@ -14,14 +15,14 @@ func New(file *book_file.File) *Repository {
 }
 
 func (r *Repository) Record(item waku.Waku) error {
-	return r.file.UpdateWaku(func(items []waku.Waku) ([]waku.Waku, error) {
-		return append(items, item), nil
+	return r.file.UpdateWaku(func(book book_file.Book) ([]waku.Waku, error) {
+		return append(book.Waku, item), nil
 	})
 }
 
 func (r *Repository) Correct(item waku.Waku) error {
-	return r.file.UpdateWaku(func(items []waku.Waku) ([]waku.Waku, error) {
-		next := append([]waku.Waku{}, items...)
+	return r.file.UpdateWaku(func(book book_file.Book) ([]waku.Waku, error) {
+		next := append([]waku.Waku{}, book.Waku...)
 		found := false
 		for i, current := range next {
 			if current.ID == item.ID {
@@ -39,8 +40,11 @@ func (r *Repository) Correct(item waku.Waku) error {
 
 func (r *Repository) Remove(id string) (waku.Waku, error) {
 	var removed waku.Waku
-	err := r.file.UpdateWaku(func(items []waku.Waku) ([]waku.Waku, error) {
-		next, item, err := waku.Remove(items, id)
+	err := r.file.UpdateWaku(func(book book_file.Book) ([]waku.Waku, error) {
+		if nyushukkin.HasWaku(book.Nyushukkin, id) {
+			return nil, waku.ErrInUse
+		}
+		next, item, err := waku.Remove(book.Waku, id)
 		if err != nil {
 			return nil, err
 		}
@@ -55,6 +59,5 @@ func (r *Repository) All() []waku.Waku {
 }
 
 func (r *Repository) InUse(id string) bool {
-	_ = id
-	return false
+	return nyushukkin.HasWaku(r.file.Nyushukkin(), id)
 }

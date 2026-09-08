@@ -63,6 +63,51 @@ func TestWakuAssignsID(t *testing.T) {
 	}
 }
 
+func TestNyushukkinWaku(t *testing.T) {
+	ts := testServer(t)
+	food := postWaku(t, ts, `{"name":"食費"}`, http.StatusCreated)
+	rent := postWaku(t, ts, `{"name":"家賃"}`, http.StatusCreated)
+
+	created := postNyushukkin(t, ts, `{"kind":"支出","amount":1,"date":"2026-09-06","memo":""}`, http.StatusCreated)
+	if created.WakuID != "" {
+		t.Fatalf("expected no waku, got %+v", created)
+	}
+
+	attached := putNyushukkin(t, ts, created.ID, `{"kind":"支出","amount":1,"date":"2026-09-06","memo":"","wakuId":"`+food.ID+`"}`, http.StatusOK)
+	if attached.WakuID != food.ID {
+		t.Fatalf("attached %+v", attached)
+	}
+	listed := listNyushukkin(t, ts, "2026-09", http.StatusOK)
+	if len(listed) != 1 || listed[0].WakuID != food.ID {
+		t.Fatalf("list %+v", listed)
+	}
+
+	changed := putNyushukkin(t, ts, created.ID, `{"kind":"支出","amount":1,"date":"2026-09-06","memo":"","wakuId":"`+rent.ID+`"}`, http.StatusOK)
+	if changed.WakuID != rent.ID {
+		t.Fatalf("changed %+v", changed)
+	}
+
+	_, body := doJSON(t, ts, http.MethodDelete, "/waku/"+rent.ID, "", http.StatusConflict)
+	assertError(t, body, waku.InUse)
+
+	detached := putNyushukkin(t, ts, created.ID, `{"kind":"支出","amount":1,"date":"2026-09-06","memo":""}`, http.StatusOK)
+	if detached.WakuID != "" {
+		t.Fatalf("detached %+v", detached)
+	}
+	deleteWaku(t, ts, rent.ID, http.StatusOK)
+
+	withWaku := postNyushukkin(t, ts, `{"kind":"支出","amount":2,"date":"2026-09-06","memo":"","wakuId":"`+food.ID+`"}`, http.StatusCreated)
+	if withWaku.WakuID != food.ID {
+		t.Fatalf("recorded %+v", withWaku)
+	}
+
+	_, body = doJSON(t, ts, http.MethodPost, "/nyushukkin", `{"kind":"支出","amount":1,"date":"2026-09-06","memo":"","wakuId":"missing"}`, http.StatusBadRequest)
+	assertError(t, body, waku.NotFound)
+
+	_, body = doJSON(t, ts, http.MethodPost, "/nyushukkin", `{"kind":"支出","amount":1,"date":"2026-09-06","memo":"","wakuId":["`+food.ID+`","`+rent.ID+`"]}`, http.StatusBadRequest)
+	assertError(t, body, "入力が読めません")
+}
+
 func postWaku(t *testing.T, ts *httptest.Server, body string, status int) waku.Waku {
 	t.Helper()
 	_, raw := doJSON(t, ts, http.MethodPost, "/waku", body, status)

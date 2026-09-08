@@ -20,6 +20,9 @@
     "test:run": {
       "dependsOn": ["^test:run"]
     },
+    "//#dead-code": {
+      "cache": false
+    },
     "dev": {
       "cache": false,
       "persistent": true

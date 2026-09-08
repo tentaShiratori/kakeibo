@@ -113,16 +113,6 @@ export function removeNyushukkin(items: Nyushukkin[], id: string): NyushukkinRes
   return { ok: true, value: items.filter((item) => item.id !== id) };
 }
 
-export function restoreNyushukkin(
-  items: Nyushukkin[],
-  removed: Nyushukkin,
-): NyushukkinResult<Nyushukkin[]> {
-  if (items.some((item) => item.id === removed.id)) {
-    return { ok: false, error: "その入出金はすでにあります" };
-  }
-  return { ok: true, value: [...items, removed] };
-}
-
 export function replaceNyushukkin(items: Nyushukkin[], next: Nyushukkin): Nyushukkin[] {
   const index = items.findIndex((item) => item.id === next.id);
   if (index === -1) {

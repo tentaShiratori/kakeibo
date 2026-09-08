@@ -20,10 +20,12 @@ import { yen } from "./yen";
 
 export function Ledger() {
   const today = todayJst();
-  const { items, removed, onRecord, onCorrect, onRemove, onRestore } = useNyushukkin();
   const [month, setMonth] = useState(calendarMonth(today));
+  const { items, removed, loadError, hasOtherMonths, onRecord, onCorrect, onRemove, onRestore } =
+    useNyushukkin(month);
   const [editing, setEditing] = useState<Nyushukkin | null>(null);
   const [error, setError] = useState("");
+  const shownError = error || loadError;
 
   const totals = monthTotals(items, month);
   const listed = sortNyushukkin(nyushukkinInMonth(items, month));
@@ -77,9 +79,9 @@ export function Ledger() {
           setError("");
         }}
       />
-      {error ? (
+      {shownError ? (
         <p className="text-sm text-danger" role="alert">
-          {error}
+          {shownError}
         </p>
       ) : null}
 
@@ -90,13 +92,14 @@ export function Ledger() {
             className="self-start"
             variant="ghost"
             onClick={() => {
-              const restored = onRestore();
-              if (!restored.ok) {
-                setError(restored.error);
-                return;
-              }
-              setMonth(calendarMonth(restored.value.date));
-              setError("");
+              void onRestore().then((restored) => {
+                if (!restored.ok) {
+                  setError(restored.error);
+                  return;
+                }
+                setMonth(calendarMonth(restored.value.date));
+                setError("");
+              });
             }}
           >
             消した入出金を戻す
@@ -104,7 +107,9 @@ export function Ledger() {
         ) : null}
         {listed.length === 0 ? (
           <p className="text-sm text-muted">
-            {items.length === 0 ? "まだ入出金がありません" : "この月の入出金はまだありません"}
+            {items.length === 0 && !hasOtherMonths
+              ? "まだ入出金がありません"
+              : "この月の入出金はまだありません"}
           </p>
         ) : (
           <ul className="flex flex-col divide-y divide-border">
@@ -116,15 +121,16 @@ export function Ledger() {
                 <Button
                   variant="ghost"
                   onClick={() => {
-                    const next = onRemove(item.id);
-                    if (!next.ok) {
-                      setError(next.error);
-                      return;
-                    }
-                    setError("");
-                    if (editing?.id === item.id) {
-                      setEditing(null);
-                    }
+                    void onRemove(item.id).then((next) => {
+                      if (!next.ok) {
+                        setError(next.error);
+                        return;
+                      }
+                      setError("");
+                      if (editing?.id === item.id) {
+                        setEditing(null);
+                      }
+                    });
                   }}
                 >
                   消す

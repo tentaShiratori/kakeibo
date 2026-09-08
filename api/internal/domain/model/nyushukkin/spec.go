@@ -99,6 +99,18 @@ func InMonth(items []Nyushukkin, month string) []Nyushukkin {
 	return out
 }
 
+func HasWaku(items []Nyushukkin, wakuID string) bool {
+	if wakuID == "" {
+		return false
+	}
+	for _, item := range items {
+		if item.WakuID == wakuID {
+			return true
+		}
+	}
+	return false
+}
+
 func Sort(items []Nyushukkin) []Nyushukkin {
 	out := slices.Clone(items)
 	slices.SortFunc(out, func(a, b Nyushukkin) int {

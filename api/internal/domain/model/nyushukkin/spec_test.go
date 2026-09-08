@@ -110,6 +110,52 @@ func TestInMonthAndSort(t *testing.T) {
 	})
 }
 
+func TestHasWaku(t *testing.T) {
+	items := []Nyushukkin{
+		{ID: "a", WakuID: "w1"},
+		{ID: "b"},
+	}
+	t.Run("付いている枠は使用中", func(t *testing.T) {
+		if !HasWaku(items, "w1") {
+			t.Fatal("expected in use")
+		}
+	})
+	t.Run("付いていない枠と空は使用中ではない", func(t *testing.T) {
+		if HasWaku(items, "w2") {
+			t.Fatal("expected unused")
+		}
+		if HasWaku(items, "") {
+			t.Fatal("empty id is not in use")
+		}
+	})
+}
+
+func TestFromStoredWakuID(t *testing.T) {
+	t.Run("枠が無い保存も読める", func(t *testing.T) {
+		got, ok := FromStored(map[string]any{
+			"id": "a", "kind": "支出", "amount": float64(1), "date": "2026-09-06", "memo": "",
+		})
+		if !ok || got.WakuID != "" {
+			t.Fatalf("got %+v %v", got, ok)
+		}
+	})
+	t.Run("枠が一つ付いた保存を読める", func(t *testing.T) {
+		got, ok := FromStored(map[string]any{
+			"id": "a", "kind": "支出", "amount": float64(1), "date": "2026-09-06", "memo": "", "wakuId": "w1",
+		})
+		if !ok || got.WakuID != "w1" {
+			t.Fatalf("got %+v %v", got, ok)
+		}
+	})
+	t.Run("枠が文字列でなければ読まない", func(t *testing.T) {
+		if _, ok := FromStored(map[string]any{
+			"id": "a", "kind": "支出", "amount": float64(1), "date": "2026-09-06", "memo": "", "wakuId": []any{"w1", "w2"},
+		}); ok {
+			t.Fatal("expected skip")
+		}
+	})
+}
+
 func TestParseMonth(t *testing.T) {
 	t.Run("暦月を受け取る", func(t *testing.T) {
 		got, err := ParseMonth("2026-09")

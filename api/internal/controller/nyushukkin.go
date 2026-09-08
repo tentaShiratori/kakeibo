@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/tentaShiratori/kakeibo/api/internal/domain/model/nyushukkin"
+	"github.com/tentaShiratori/kakeibo/api/internal/domain/model/waku"
 	"github.com/tentaShiratori/kakeibo/api/internal/query/nyushukkin_query"
 	"github.com/tentaShiratori/kakeibo/api/internal/query/waku_query"
 	"github.com/tentaShiratori/kakeibo/api/internal/usecase"
@@ -94,6 +95,10 @@ func decodeInput(r *http.Request) (nyushukkin.Input, error) {
 func writeUsecaseError(w http.ResponseWriter, err error) {
 	if errors.Is(err, nyushukkin.ErrNotFound) {
 		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	if errors.Is(err, waku.ErrNotFound) {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	switch err.Error() {

@@ -8,6 +8,7 @@ type Nyushukkin struct {
 	Amount int64  `json:"amount"`
 	Date   string `json:"date"`
 	Memo   string `json:"memo"`
+	WakuID string `json:"wakuId,omitempty"`
 }
 
 type Input struct {
@@ -15,4 +16,5 @@ type Input struct {
 	Amount json.Number `json:"amount"`
 	Date   string      `json:"date"`
 	Memo   *string     `json:"memo"`
+	WakuID string      `json:"wakuId"`
 }

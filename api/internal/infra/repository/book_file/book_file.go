@@ -37,10 +37,10 @@ func (f *File) Waku() []waku.Waku {
 	return append([]waku.Waku{}, f.book.Waku...)
 }
 
-func (f *File) UpdateNyushukkin(fn func([]nyushukkin.Nyushukkin) ([]nyushukkin.Nyushukkin, error)) error {
+func (f *File) UpdateNyushukkin(fn func(book Book) ([]nyushukkin.Nyushukkin, error)) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	next, err := fn(append([]nyushukkin.Nyushukkin{}, f.book.Nyushukkin...))
+	next, err := fn(cloneBook(f.book))
 	if err != nil {
 		return err
 	}
@@ -52,10 +52,10 @@ func (f *File) UpdateNyushukkin(fn func([]nyushukkin.Nyushukkin) ([]nyushukkin.N
 	return nil
 }
 
-func (f *File) UpdateWaku(fn func([]waku.Waku) ([]waku.Waku, error)) error {
+func (f *File) UpdateWaku(fn func(book Book) ([]waku.Waku, error)) error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	next, err := fn(append([]waku.Waku{}, f.book.Waku...))
+	next, err := fn(cloneBook(f.book))
 	if err != nil {
 		return err
 	}
@@ -65,6 +65,13 @@ func (f *File) UpdateWaku(fn func([]waku.Waku) ([]waku.Waku, error)) error {
 	}
 	f.book = book
 	return nil
+}
+
+func cloneBook(book Book) Book {
+	return Book{
+		Nyushukkin: append([]nyushukkin.Nyushukkin{}, book.Nyushukkin...),
+		Waku:       append([]waku.Waku{}, book.Waku...),
+	}
 }
 
 func loadBook(path string) Book {

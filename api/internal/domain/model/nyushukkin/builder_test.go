@@ -42,27 +42,51 @@ func TestRecord(t *testing.T) {
 			t.Fatalf("got %+v %v", got, err)
 		}
 	})
-	t.Run("メモが無いときは空", func(t *testing.T) {
+	t.Run("枠は付けなくても残せる", func(t *testing.T) {
 		got, err := Record(Input{
 			Kind: "支出", Amount: "1", Date: today,
-		}, today, "e")
-		if err != nil || got.Memo != "" {
+		}, today, "f")
+		if err != nil || got.WakuID != "" {
+			t.Fatalf("got %+v %v", got, err)
+		}
+	})
+	t.Run("枠は一つ付けられる", func(t *testing.T) {
+		got, err := Record(Input{
+			Kind: "支出", Amount: "1", Date: today, WakuID: " w1 ",
+		}, today, "g")
+		if err != nil || got.WakuID != "w1" {
 			t.Fatalf("got %+v %v", got, err)
 		}
 	})
 }
 
 func TestCorrect(t *testing.T) {
-	current := Nyushukkin{ID: "a", Kind: "支出", Amount: 5000, Date: "2026-09-06", Memo: ""}
-	got, err := Correct(current, Input{
-		Kind: "支出", Amount: "3000", Date: "2026-09-06", Memo: ptr(""),
-	}, today)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got.Amount != 3000 || got.ID != "a" {
-		t.Fatalf("got %+v", got)
-	}
+	current := Nyushukkin{ID: "a", Kind: "支出", Amount: 5000, Date: "2026-09-06", Memo: "", WakuID: "w1"}
+	t.Run("金額を直せる", func(t *testing.T) {
+		got, err := Correct(current, Input{
+			Kind: "支出", Amount: "3000", Date: "2026-09-06", Memo: ptr(""), WakuID: "w1",
+		}, today)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got.Amount != 3000 || got.ID != "a" || got.WakuID != "w1" {
+			t.Fatalf("got %+v", got)
+		}
+	})
+	t.Run("枠を付け外しできる", func(t *testing.T) {
+		got, err := Correct(current, Input{
+			Kind: "支出", Amount: "5000", Date: "2026-09-06",
+		}, today)
+		if err != nil || got.WakuID != "" {
+			t.Fatalf("got %+v %v", got, err)
+		}
+		got, err = Correct(got, Input{
+			Kind: "支出", Amount: "5000", Date: "2026-09-06", WakuID: "w2",
+		}, today)
+		if err != nil || got.WakuID != "w2" {
+			t.Fatalf("got %+v %v", got, err)
+		}
+	})
 }
 
 func TestRemove(t *testing.T) {

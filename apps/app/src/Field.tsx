@@ -30,3 +30,19 @@ export function TextInput({ className, ...props }: ComponentProps<"input">) {
     />
   );
 }
+
+export function Select({ className, children, ...props }: ComponentProps<"select">) {
+  return (
+    <select
+      {...props}
+      className={[
+        "rounded-md border border-border bg-surface px-3 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      {children}
+    </select>
+  );
+}

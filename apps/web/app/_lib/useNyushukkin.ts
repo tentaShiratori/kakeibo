@@ -1,82 +1,85 @@
 "use client";
 
-import { useAtom } from "jotai";
-import { atomWithStorage } from "jotai/utils";
-import type { SyncStorage } from "jotai/vanilla/utils/atomWithStorage";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { calendarMonth } from "./calendarMonth";
 import {
   correctNyushukkin,
   recordNyushukkin,
   removeNyushukkin,
   replaceNyushukkin,
-  restoreNyushukkin,
   todayJst,
   type Nyushukkin,
   type NyushukkinInput,
   type NyushukkinResult,
 } from "./nyushukkin";
-import { loadStored, readStored, serializeStored } from "./stored";
+import { deleteNyushukkin, getNyushukkin, postNyushukkin, putNyushukkin } from "./nyushukkinApi";
 
-const storageKey = "kakeibo.nyushukkin";
-
-const nyushukkinStorage: SyncStorage<Nyushukkin[]> = {
-  getItem(key, initialValue) {
-    if (typeof window === "undefined") {
-      return initialValue;
-    }
-    return loadStored(window.localStorage.getItem(key), window.localStorage.getItem(`${key}.bak`));
-  },
-  setItem(key, newValue) {
-    if (typeof window === "undefined") {
-      return;
-    }
-    const current = window.localStorage.getItem(key);
-    const next = serializeStored(newValue);
-    if (current !== null && readStored(current).ok) {
-      window.localStorage.setItem(`${key}.bak`, current);
-    }
-    window.localStorage.setItem(key, next);
-    if (window.localStorage.getItem(`${key}.bak`) === null) {
-      window.localStorage.setItem(`${key}.bak`, next);
-    }
-  },
-  removeItem(key) {
-    if (typeof window === "undefined") {
-      return;
-    }
-    window.localStorage.removeItem(key);
-    window.localStorage.removeItem(`${key}.bak`);
-  },
-  subscribe(key, callback, initialValue) {
-    if (typeof window === "undefined") {
-      return undefined;
-    }
-    const onChange = (event: StorageEvent) => {
-      if (event.storageArea === window.localStorage && event.key === key) {
-        callback(nyushukkinStorage.getItem(key, initialValue));
-      }
-    };
-    window.addEventListener("storage", onChange);
-    return () => window.removeEventListener("storage", onChange);
-  },
-};
-
-const nyushukkinItemsAtom = atomWithStorage<Nyushukkin[]>(storageKey, [], nyushukkinStorage);
-
-export function useNyushukkin() {
-  const [items, setItems] = useAtom(nyushukkinItemsAtom);
+export function useNyushukkin(month: string) {
+  const [items, setItems] = useState<Nyushukkin[]>([]);
   const [removed, setRemoved] = useState<Nyushukkin | null>(null);
+  const [loadError, setLoadError] = useState("");
+  const [monthsWithItems, setMonthsWithItems] = useState<string[]>([]);
 
-  function onRecord(input: NyushukkinInput): NyushukkinResult<Nyushukkin> {
-    const recorded = recordNyushukkin(input, todayJst(), crypto.randomUUID());
+  function noteMonth(key: string) {
+    setMonthsWithItems((current) => (current.includes(key) ? current : [...current, key]));
+  }
+
+  useEffect(() => {
+    const ac = new AbortController();
+    setLoadError("");
+    void (async () => {
+      try {
+        const listed = await getNyushukkin(month, { signal: ac.signal });
+        if (ac.signal.aborted) {
+          return;
+        }
+        if (!listed.ok) {
+          setLoadError(listed.error);
+          setItems([]);
+          return;
+        }
+        setItems(listed.value);
+        if (listed.value.length > 0) {
+          noteMonth(month);
+        }
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+        throw error;
+      }
+    })();
+    return () => ac.abort();
+  }, [month]);
+
+  const hasOtherMonths = monthsWithItems.some((key) => key !== month);
+
+  async function onRecord(input: NyushukkinInput): Promise<NyushukkinResult<Nyushukkin>> {
+    const recorded = recordNyushukkin(input, todayJst(), "pending");
     if (!recorded.ok) {
       return recorded;
     }
-    setItems((current) => replaceNyushukkin(current, recorded.value));
-    return recorded;
+    const saved = await postNyushukkin({
+      kind: recorded.value.kind,
+      amount: recorded.value.amount,
+      date: recorded.value.date,
+      memo: recorded.value.memo,
+    });
+    if (!saved.ok) {
+      return saved;
+    }
+    const savedMonth = calendarMonth(saved.value.date);
+    noteMonth(savedMonth);
+    if (savedMonth === month) {
+      setItems((current) => replaceNyushukkin(current, saved.value));
+    }
+    return saved;
   }
 
-  function onCorrect(id: string, input: NyushukkinInput): NyushukkinResult<Nyushukkin> {
+  async function onCorrect(
+    id: string,
+    input: NyushukkinInput,
+  ): Promise<NyushukkinResult<Nyushukkin>> {
     const current = items.find((item) => item.id === id);
     if (!current) {
       return { ok: false, error: "その入出金はありません" };
@@ -85,34 +88,61 @@ export function useNyushukkin() {
     if (!recorded.ok) {
       return recorded;
     }
-    setItems((next) => replaceNyushukkin(next, recorded.value));
-    return recorded;
+    const saved = await putNyushukkin(id, {
+      kind: recorded.value.kind,
+      amount: recorded.value.amount,
+      date: recorded.value.date,
+      memo: recorded.value.memo,
+    });
+    if (!saved.ok) {
+      return saved;
+    }
+    const savedMonth = calendarMonth(saved.value.date);
+    noteMonth(savedMonth);
+    if (savedMonth === month) {
+      setItems((currentItems) => replaceNyushukkin(currentItems, saved.value));
+    } else {
+      setItems((currentItems) => currentItems.filter((item) => item.id !== id));
+    }
+    return saved;
   }
 
-  function onRemove(id: string): NyushukkinResult<Nyushukkin> {
+  async function onRemove(id: string): Promise<NyushukkinResult<Nyushukkin>> {
     const current = items.find((item) => item.id === id);
     const next = removeNyushukkin(items, id);
     if (!next.ok || !current) {
       return { ok: false, error: next.ok ? "その入出金はありません" : next.error };
+    }
+    const saved = await deleteNyushukkin(id);
+    if (!saved.ok) {
+      return saved;
     }
     setItems(next.value);
     setRemoved(current);
     return { ok: true, value: current };
   }
 
-  function onRestore(): NyushukkinResult<Nyushukkin> {
+  async function onRestore(): Promise<NyushukkinResult<Nyushukkin>> {
     if (!removed) {
       return { ok: false, error: "消した入出金はありません" };
     }
-    const next = restoreNyushukkin(items, removed);
-    if (!next.ok) {
-      return next;
+    const saved = await postNyushukkin({
+      kind: removed.kind,
+      amount: removed.amount,
+      date: removed.date,
+      memo: removed.memo,
+    });
+    if (!saved.ok) {
+      return saved;
     }
-    setItems(next.value);
-    const restored = removed;
+    const savedMonth = calendarMonth(saved.value.date);
+    noteMonth(savedMonth);
+    if (savedMonth === month) {
+      setItems((current) => replaceNyushukkin(current, saved.value));
+    }
     setRemoved(null);
-    return { ok: true, value: restored };
+    return saved;
   }
 
-  return { items, removed, onRecord, onCorrect, onRemove, onRestore };
+  return { items, removed, loadError, hasOtherMonths, onRecord, onCorrect, onRemove, onRestore };
 }

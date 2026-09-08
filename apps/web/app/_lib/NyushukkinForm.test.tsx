@@ -21,8 +21,8 @@ const saved: Nyushukkin = {
   memo: "",
 };
 
-type RecordFn = (input: NyushukkinInput) => NyushukkinResult<Nyushukkin>;
-type CorrectFn = (id: string, input: NyushukkinInput) => NyushukkinResult<Nyushukkin>;
+type RecordFn = (input: NyushukkinInput) => Promise<NyushukkinResult<Nyushukkin>>;
+type CorrectFn = (id: string, input: NyushukkinInput) => Promise<NyushukkinResult<Nyushukkin>>;
 
 function renderForm(
   props: Partial<{
@@ -33,9 +33,11 @@ function renderForm(
     onSaved: (item: Nyushukkin) => void;
   }> = {},
 ) {
-  const onRecord = vi.fn<RecordFn>(props.onRecord ?? (() => ({ ok: true as const, value: saved })));
+  const onRecord = vi.fn<RecordFn>(
+    props.onRecord ?? (async () => ({ ok: true as const, value: saved })),
+  );
   const onCorrect = vi.fn<CorrectFn>(
-    props.onCorrect ?? (() => ({ ok: true as const, value: saved })),
+    props.onCorrect ?? (async () => ({ ok: true as const, value: saved })),
   );
   const onCancel = vi.fn<() => void>(props.onCancel ?? (() => {}));
   const onSaved = vi.fn<(item: Nyushukkin) => void>(props.onSaved ?? (() => {}));
@@ -101,7 +103,7 @@ test("やめると onCancel を呼ぶ", () => {
 
 test("帳簿の失敗はアラートに出す", async () => {
   renderForm({
-    onRecord: () => ({ ok: false as const, error: "その入出金はありません" }),
+    onRecord: async () => ({ ok: false as const, error: "その入出金はありません" }),
   });
   fireEvent.change(screen.getByLabelText("金額"), { target: { value: "5000" } });
   fireEvent.click(screen.getByRole("button", { name: "記録する" }));

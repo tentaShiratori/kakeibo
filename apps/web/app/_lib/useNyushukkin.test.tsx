@@ -1,67 +1,40 @@
 import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
-import { createStore, Provider } from "jotai";
-import type { ReactNode } from "react";
-import { afterEach, beforeEach, expect, test } from "vitest";
-import { todayJst } from "./nyushukkin";
-import { serializeStored } from "./stored";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { fakeNyushukkinApi } from "../../test/fakeNyushukkinApi";
+import { calendarMonth, todayJst } from "./nyushukkin";
 import { useNyushukkin } from "./useNyushukkin";
 
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
 });
 
 beforeEach(() => {
-  window.localStorage.clear();
+  const { fetchImpl } = fakeNyushukkinApi();
+  vi.stubGlobal("fetch", fetchImpl);
 });
 
-function renderNyushukkin() {
-  const store = createStore();
-  return renderHook(() => useNyushukkin(), {
-    wrapper: ({ children }: { children: ReactNode }) => (
-      <Provider store={store}>{children}</Provider>
-    ),
+function renderNyushukkin(month = calendarMonth(todayJst())) {
+  return renderHook((props: { month: string }) => useNyushukkin(props.month), {
+    initialProps: { month },
   });
 }
 
-test("保存が無いときは空の帳簿", () => {
+test("保存が無いときは空の帳簿", async () => {
   const { result } = renderNyushukkin();
-  expect(result.current.items).toEqual([]);
+  await waitFor(() => {
+    expect(result.current.items).toEqual([]);
+  });
   expect(result.current.removed).toBeNull();
 });
 
-test("壊れた保存はひとつ前の帳簿を出す", async () => {
-  const today = todayJst();
-  window.localStorage.setItem(
-    "kakeibo.nyushukkin.bak",
-    serializeStored([{ id: "a", kind: "支出", amount: 5000, date: today, memo: "" }]),
-  );
-  window.localStorage.setItem("kakeibo.nyushukkin", "nope");
+test("記録できる", async () => {
   const { result } = renderNyushukkin();
   await waitFor(() => {
-    expect(result.current.items).toEqual([
-      { id: "a", kind: "支出", amount: 5000, date: today, memo: "" },
-    ]);
+    expect(result.current.items).toEqual([]);
   });
-});
-
-test("初めての記録が壊れても残る", async () => {
-  const { result, rerender } = renderNyushukkin();
-  act(() => {
-    result.current.onRecord({ kind: "支出", amount: "5000", date: todayJst(), memo: "" });
-  });
-  rerender();
-  expect(result.current.items).toHaveLength(1);
-  window.localStorage.setItem("kakeibo.nyushukkin", "nope");
-  const { result: reloaded } = renderNyushukkin();
-  await waitFor(() => {
-    expect(reloaded.current.items[0]?.amount).toBe(5000);
-  });
-});
-
-test("記録できる", () => {
-  const { result, rerender } = renderNyushukkin();
-  act(() => {
-    const recorded = result.current.onRecord({
+  await act(async () => {
+    const recorded = await result.current.onRecord({
       kind: "支出",
       amount: "5000",
       date: todayJst(),
@@ -69,15 +42,17 @@ test("記録できる", () => {
     });
     expect(recorded.ok).toBe(true);
   });
-  rerender();
   expect(result.current.items).toHaveLength(1);
   expect(result.current.items[0]?.amount).toBe(5000);
 });
 
-test("0円は記録できない", () => {
+test("0円は記録できない", async () => {
   const { result } = renderNyushukkin();
-  act(() => {
-    const recorded = result.current.onRecord({
+  await waitFor(() => {
+    expect(result.current.items).toEqual([]);
+  });
+  await act(async () => {
+    const recorded = await result.current.onRecord({
       kind: "支出",
       amount: "0",
       date: todayJst(),
@@ -88,16 +63,18 @@ test("0円は記録できない", () => {
   expect(result.current.items).toEqual([]);
 });
 
-test("同じ入出金を直せる", () => {
-  const { result, rerender } = renderNyushukkin();
-  act(() => {
-    result.current.onRecord({ kind: "支出", amount: "5000", date: todayJst(), memo: "" });
+test("同じ入出金を直せる", async () => {
+  const { result } = renderNyushukkin();
+  await waitFor(() => {
+    expect(result.current.items).toEqual([]);
   });
-  rerender();
+  await act(async () => {
+    await result.current.onRecord({ kind: "支出", amount: "5000", date: todayJst(), memo: "" });
+  });
   const id = result.current.items[0]?.id;
   expect(id).toBeDefined();
-  act(() => {
-    const recorded = result.current.onCorrect(id ?? "", {
+  await act(async () => {
+    const recorded = await result.current.onCorrect(id ?? "", {
       kind: "支出",
       amount: "3000",
       date: todayJst(),
@@ -105,15 +82,17 @@ test("同じ入出金を直せる", () => {
     });
     expect(recorded.ok).toBe(true);
   });
-  rerender();
   expect(result.current.items[0]?.amount).toBe(3000);
 });
 
-test("無い入出金は直せない", () => {
+test("無い入出金は直せない", async () => {
   const { result } = renderNyushukkin();
-  act(() => {
+  await waitFor(() => {
+    expect(result.current.items).toEqual([]);
+  });
+  await act(async () => {
     expect(
-      result.current.onCorrect("missing", {
+      await result.current.onCorrect("missing", {
         kind: "支出",
         amount: "100",
         date: todayJst(),
@@ -123,43 +102,59 @@ test("無い入出金は直せない", () => {
   });
 });
 
-test("入出金を消して戻せる", () => {
-  const { result, rerender } = renderNyushukkin();
-  act(() => {
-    result.current.onRecord({ kind: "支出", amount: "5000", date: todayJst(), memo: "" });
+test("入出金を消して戻せる", async () => {
+  const { result } = renderNyushukkin();
+  await waitFor(() => {
+    expect(result.current.items).toEqual([]);
   });
-  rerender();
-  const id = result.current.items[0]?.id ?? "";
-  act(() => {
-    expect(result.current.onRemove(id).ok).toBe(true);
+  await act(async () => {
+    await result.current.onRecord({ kind: "支出", amount: "5000", date: todayJst(), memo: "" });
   });
-  rerender();
+  await act(async () => {
+    expect((await result.current.onRemove(result.current.items[0]?.id ?? "")).ok).toBe(true);
+  });
   expect(result.current.items).toEqual([]);
-  expect(result.current.removed?.id).toBe(id);
-  act(() => {
-    expect(result.current.onRestore().ok).toBe(true);
+  expect(result.current.removed?.amount).toBe(5000);
+  await act(async () => {
+    expect((await result.current.onRestore()).ok).toBe(true);
   });
-  rerender();
-  expect(result.current.items[0]?.id).toBe(id);
+  expect(result.current.items[0]?.amount).toBe(5000);
   expect(result.current.removed).toBeNull();
 });
 
-test("無い入出金は消せない", () => {
+test("無い入出金は消せない", async () => {
   const { result } = renderNyushukkin();
-  act(() => {
-    expect(result.current.onRemove("missing")).toEqual({
+  await waitFor(() => {
+    expect(result.current.items).toEqual([]);
+  });
+  await act(async () => {
+    expect(await result.current.onRemove("missing")).toEqual({
       ok: false,
       error: "その入出金はありません",
     });
   });
 });
 
-test("消していないときは戻せない", () => {
+test("消していないときは戻せない", async () => {
   const { result } = renderNyushukkin();
-  act(() => {
-    expect(result.current.onRestore()).toEqual({
+  await waitFor(() => {
+    expect(result.current.items).toEqual([]);
+  });
+  await act(async () => {
+    expect(await result.current.onRestore()).toEqual({
       ok: false,
       error: "消した入出金はありません",
     });
   });
+});
+
+test("api に届かなければ一覧を空にする", async () => {
+  vi.stubGlobal("fetch", async () => {
+    throw new TypeError("Failed to fetch");
+  });
+  const { result } = renderNyushukkin();
+  await waitFor(() => {
+    expect(result.current.loadError).toBe("api に届きません");
+  });
+  expect(result.current.items).toEqual([]);
 });

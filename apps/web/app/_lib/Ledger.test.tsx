@@ -1,31 +1,27 @@
 import { cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
-import { createStore, Provider } from "jotai";
-import { afterEach, beforeEach, expect, test } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { renderApp } from "../../test/renderApp";
+import { fakeNyushukkinApi } from "../../test/fakeNyushukkinApi";
 import { Ledger } from "./Ledger";
 import { calendarMonth, formatCalendarMonth, shiftCalendarMonth, todayJst } from "./nyushukkin";
-import { serializeStored } from "./stored";
 
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
 });
 
 beforeEach(() => {
-  window.localStorage.clear();
+  const { fetchImpl } = fakeNyushukkinApi();
+  vi.stubGlobal("fetch", fetchImpl);
 });
 
 function renderLedger() {
-  const store = createStore();
-  return renderApp(
-    <Provider store={store}>
-      <Ledger />
-    </Provider>,
-  );
+  return renderApp(<Ledger />);
 }
 
-test("入出金が無いときは空だと分かる", () => {
+test("入出金が無いときは空だと分かる", async () => {
   renderLedger();
-  expect(screen.getByText("まだ入出金がありません")).toBeDefined();
+  expect(await screen.findByText("まだ入出金がありません")).toBeDefined();
 });
 
 test("金額と入出日で支出を記録できる", async () => {
@@ -63,7 +59,7 @@ test("入出金を消せる", async () => {
   fireEvent.change(screen.getByLabelText("金額"), { target: { value: "5000" } });
   fireEvent.click(screen.getByRole("button", { name: "記録する" }));
   fireEvent.click(await screen.findByRole("button", { name: "消す" }));
-  expect(screen.getByText("まだ入出金がありません")).toBeDefined();
+  expect(await screen.findByText("まだ入出金がありません")).toBeDefined();
 });
 
 test("消した入出金を戻せる", async () => {
@@ -71,8 +67,8 @@ test("消した入出金を戻せる", async () => {
   fireEvent.change(screen.getByLabelText("金額"), { target: { value: "5000" } });
   fireEvent.click(screen.getByRole("button", { name: "記録する" }));
   fireEvent.click(await screen.findByRole("button", { name: "消す" }));
-  fireEvent.click(screen.getByRole("button", { name: "消した入出金を戻す" }));
-  expect(screen.getByText(`${todayJst()} 支出 5,000円`)).toBeDefined();
+  fireEvent.click(await screen.findByRole("button", { name: "消した入出金を戻す" }));
+  expect(await screen.findByText(`${todayJst()} 支出 5,000円`)).toBeDefined();
   expect(screen.queryByRole("button", { name: "消した入出金を戻す" })).toBeNull();
 });
 
@@ -84,10 +80,10 @@ test("戻すと入出日の月へ移る", async () => {
   fireEvent.change(screen.getByLabelText("入出日"), { target: { value: pastDate } });
   fireEvent.click(screen.getByRole("button", { name: "記録する" }));
   fireEvent.click(await screen.findByRole("button", { name: "消す" }));
-  fireEvent.click(screen.getByRole("button", { name: "次の月" }));
-  fireEvent.click(screen.getByRole("button", { name: "消した入出金を戻す" }));
+  fireEvent.click(await screen.findByRole("button", { name: "次の月" }));
+  fireEvent.click(await screen.findByRole("button", { name: "消した入出金を戻す" }));
+  expect(await screen.findByText(`${pastDate} 支出 1,200円`)).toBeDefined();
   expect(screen.getByText(`${formatCalendarMonth(lastMonth)}の収支`)).toBeDefined();
-  expect(screen.getByText(`${pastDate} 支出 1,200円`)).toBeDefined();
 });
 
 test("記録したあと金額に戻り続けて書ける", async () => {
@@ -109,16 +105,18 @@ test("一覧と収支は見ている暦月だけにする", async () => {
   const today = todayJst();
   const thisMonth = calendarMonth(today);
   const lastMonth = shiftCalendarMonth(thisMonth, -1);
-  window.localStorage.setItem(
-    "kakeibo.nyushukkin",
-    serializeStored([
-      { id: "now", kind: "支出", amount: 5000, date: today, memo: "" },
-      { id: "past", kind: "支出", amount: 1200, date: `${lastMonth}-15`, memo: "" },
-    ]),
-  );
   renderLedger();
+  fireEvent.change(screen.getByLabelText("金額"), { target: { value: "5000" } });
+  fireEvent.click(screen.getByRole("button", { name: "記録する" }));
+  await screen.findByText(`${today} 支出 5,000円`);
+  fireEvent.change(screen.getByLabelText("金額"), { target: { value: "1200" } });
+  fireEvent.change(screen.getByLabelText("入出日"), { target: { value: `${lastMonth}-15` } });
+  fireEvent.click(screen.getByRole("button", { name: "記録する" }));
+  expect(await screen.findByText(`${formatCalendarMonth(lastMonth)}の収支`)).toBeDefined();
+  expect(screen.getByText(`${lastMonth}-15 支出 1,200円`)).toBeDefined();
+  expect(screen.queryByText(`${today} 支出 5,000円`)).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "次の月" }));
   expect(await screen.findByText(`${today} 支出 5,000円`)).toBeDefined();
-  expect(screen.getByText(`${formatCalendarMonth(thisMonth)}の収支`)).toBeDefined();
   expect(screen.queryByText(`${lastMonth}-15 支出 1,200円`)).toBeNull();
   expect(screen.getByText("5,000円", { selector: "dd" })).toBeDefined();
 });
@@ -127,17 +125,14 @@ test("前の月の入出金と収支を見られる", async () => {
   const today = todayJst();
   const thisMonth = calendarMonth(today);
   const lastMonth = shiftCalendarMonth(thisMonth, -1);
-  window.localStorage.setItem(
-    "kakeibo.nyushukkin",
-    serializeStored([
-      { id: "now", kind: "支出", amount: 5000, date: today, memo: "" },
-      { id: "past", kind: "支出", amount: 1200, date: `${lastMonth}-15`, memo: "" },
-    ]),
-  );
   renderLedger();
+  fireEvent.change(screen.getByLabelText("金額"), { target: { value: "5000" } });
+  fireEvent.click(screen.getByRole("button", { name: "記録する" }));
   await screen.findByText(`${today} 支出 5,000円`);
-  fireEvent.click(screen.getByRole("button", { name: "前の月" }));
-  expect(screen.getByText(`${formatCalendarMonth(lastMonth)}の収支`)).toBeDefined();
+  fireEvent.change(screen.getByLabelText("金額"), { target: { value: "1200" } });
+  fireEvent.change(screen.getByLabelText("入出日"), { target: { value: `${lastMonth}-15` } });
+  fireEvent.click(screen.getByRole("button", { name: "記録する" }));
+  expect(await screen.findByText(`${formatCalendarMonth(lastMonth)}の収支`)).toBeDefined();
   expect(screen.getByText(`${lastMonth}-15 支出 1,200円`)).toBeDefined();
   expect(screen.queryByText(`${today} 支出 5,000円`)).toBeNull();
   expect(screen.getByText("1,200円", { selector: "dd" })).toBeDefined();
@@ -161,13 +156,12 @@ test("記録した入出日の月へ移る", async () => {
 
 test("他の月にだけ入出金があるときはこの月が空だと分かる", async () => {
   const lastMonth = shiftCalendarMonth(calendarMonth(todayJst()), -1);
-  window.localStorage.setItem(
-    "kakeibo.nyushukkin",
-    serializeStored([
-      { id: "past", kind: "支出", amount: 1200, date: `${lastMonth}-15`, memo: "" },
-    ]),
-  );
   renderLedger();
+  fireEvent.change(screen.getByLabelText("金額"), { target: { value: "1200" } });
+  fireEvent.change(screen.getByLabelText("入出日"), { target: { value: `${lastMonth}-15` } });
+  fireEvent.click(screen.getByRole("button", { name: "記録する" }));
+  await screen.findByText(`${lastMonth}-15 支出 1,200円`);
+  fireEvent.click(screen.getByRole("button", { name: "次の月" }));
   expect(await screen.findByText("この月の入出金はまだありません")).toBeDefined();
   expect(screen.queryByText("まだ入出金がありません")).toBeNull();
 });

@@ -22,8 +22,8 @@ export function NyushukkinForm({
   onSaved,
 }: {
   editing: Nyushukkin | null;
-  onRecord: (input: NyushukkinInput) => NyushukkinResult<Nyushukkin>;
-  onCorrect: (id: string, input: NyushukkinInput) => NyushukkinResult<Nyushukkin>;
+  onRecord: (input: NyushukkinInput) => Promise<NyushukkinResult<Nyushukkin>>;
+  onCorrect: (id: string, input: NyushukkinInput) => Promise<NyushukkinResult<Nyushukkin>>;
   onCancel: () => void;
   onSaved: (item: Nyushukkin) => void;
 }) {
@@ -39,8 +39,8 @@ export function NyushukkinForm({
     onSubmitInvalid: ({ formApi }) => {
       setError(firstSubmitError(formApi.state.errorMap.onSubmit));
     },
-    onSubmit: ({ value }) => {
-      const recorded = editing ? onCorrect(editing.id, value) : onRecord(value);
+    onSubmit: async ({ value }) => {
+      const recorded = editing ? await onCorrect(editing.id, value) : await onRecord(value);
       if (!recorded.ok) {
         setError(recorded.error);
         return;

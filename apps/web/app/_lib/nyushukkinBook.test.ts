@@ -1,13 +1,7 @@
 import { describe, expect, test } from "vitest";
-import {
-  monthTotals,
-  removeNyushukkin,
-  replaceNyushukkin,
-  restoreNyushukkin,
-  sortNyushukkin,
-} from "./nyushukkin";
+import { monthTotals, removeNyushukkin, replaceNyushukkin, sortNyushukkin } from "./nyushukkin";
 
-describe("removeNyushukkin / restoreNyushukkin", () => {
+describe("removeNyushukkin", () => {
   const items = [
     { id: "a", kind: "支出" as const, amount: 5000, date: "2026-09-06", memo: "" },
     { id: "b", kind: "支出" as const, amount: 5000, date: "2026-09-06", memo: "" },
@@ -19,21 +13,6 @@ describe("removeNyushukkin / restoreNyushukkin", () => {
 
   test("無い入出金は消せない", () => {
     expect(removeNyushukkin(items, "z").ok).toBe(false);
-  });
-
-  test("消した入出金を戻せる", () => {
-    expect(restoreNyushukkin([items[1]], items[0])).toEqual({
-      ok: true,
-      value: [items[1], items[0]],
-    });
-  });
-
-  test("空の帳簿にも戻せる", () => {
-    expect(restoreNyushukkin([], items[0])).toEqual({ ok: true, value: [items[0]] });
-  });
-
-  test("すでに残っている入出金は戻せない", () => {
-    expect(restoreNyushukkin(items, items[0]).ok).toBe(false);
   });
 });
 

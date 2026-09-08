@@ -12,7 +12,9 @@ import (
 	"time"
 
 	"github.com/tentaShiratori/kakeibo/api/internal/domain/model/nyushukkin"
+	"github.com/tentaShiratori/kakeibo/api/internal/infra/repository/book_file"
 	"github.com/tentaShiratori/kakeibo/api/internal/infra/repository/nyushukkin_repository"
+	"github.com/tentaShiratori/kakeibo/api/internal/infra/repository/waku_repository"
 	"github.com/tentaShiratori/kakeibo/api/internal/lib/uuid_utils"
 	"github.com/tentaShiratori/kakeibo/api/internal/usecase"
 )
@@ -61,14 +63,18 @@ func TestNyushukkinRestartKeepsBook(t *testing.T) {
 		ids++
 		return fmt.Sprintf("id-%d", ids)
 	}
-	repo := nyushukkin_repository.New(path)
-	app := usecase.New(repo, func() time.Time { return now }, newID)
-	ts := httptest.NewServer(NewNyushukkin(app, repo))
+	file := book_file.Open(path)
+	repo := nyushukkin_repository.New(file)
+	wakuRepo := waku_repository.New(file)
+	app := usecase.New(repo, wakuRepo, func() time.Time { return now }, newID)
+	ts := httptest.NewServer(New(app, repo, wakuRepo))
 	created := postNyushukkin(t, ts, `{"kind":"支出","amount":1,"date":"2026-09-06","memo":""}`, http.StatusCreated)
 	ts.Close()
 
-	reopenedRepo := nyushukkin_repository.New(path)
-	reopened := httptest.NewServer(NewNyushukkin(usecase.New(reopenedRepo, func() time.Time { return now }, uuid_utils.New), reopenedRepo))
+	reopenedFile := book_file.Open(path)
+	reopenedRepo := nyushukkin_repository.New(reopenedFile)
+	reopenedWaku := waku_repository.New(reopenedFile)
+	reopened := httptest.NewServer(New(usecase.New(reopenedRepo, reopenedWaku, func() time.Time { return now }, uuid_utils.New), reopenedRepo, reopenedWaku))
 	t.Cleanup(reopened.Close)
 	got := listNyushukkin(t, reopened, "2026-09", http.StatusOK)
 	if len(got) != 1 || got[0] != created {
@@ -137,12 +143,14 @@ func testServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	now := mustTime("2026-09-06T12:00:00+09:00")
 	n := 0
-	repo := nyushukkin_repository.New(filepath.Join(t.TempDir(), "kakeibo.json"))
-	app := usecase.New(repo, func() time.Time { return now }, func() string {
+	file := book_file.Open(filepath.Join(t.TempDir(), "kakeibo.json"))
+	repo := nyushukkin_repository.New(file)
+	wakuRepo := waku_repository.New(file)
+	app := usecase.New(repo, wakuRepo, func() time.Time { return now }, func() string {
 		n++
 		return fmt.Sprintf("id-%d", n)
 	})
-	ts := httptest.NewServer(NewNyushukkin(app, repo))
+	ts := httptest.NewServer(New(app, repo, wakuRepo))
 	t.Cleanup(ts.Close)
 	return ts
 }

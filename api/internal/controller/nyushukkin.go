@@ -7,6 +7,7 @@ import (
 
 	"github.com/tentaShiratori/kakeibo/api/internal/domain/model/nyushukkin"
 	"github.com/tentaShiratori/kakeibo/api/internal/query/nyushukkin_query"
+	"github.com/tentaShiratori/kakeibo/api/internal/query/waku_query"
 	"github.com/tentaShiratori/kakeibo/api/internal/usecase"
 	"github.com/tentaShiratori/kakeibo/api/internal/usecase/correct_nyushukkin"
 	"github.com/tentaShiratori/kakeibo/api/internal/usecase/record_nyushukkin"
@@ -18,13 +19,18 @@ type Nyushukkin struct {
 	query nyushukkin_query.Repository
 }
 
-func NewNyushukkin(app usecase.App, query nyushukkin_query.Repository) http.Handler {
-	c := &Nyushukkin{app: app, query: query}
+func New(app usecase.App, nyushukkinQuery nyushukkin_query.Repository, wakuQuery waku_query.Repository) http.Handler {
+	n := &Nyushukkin{app: app, query: nyushukkinQuery}
+	wakuCtl := &Waku{app: app, query: wakuQuery}
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /nyushukkin", c.record)
-	mux.HandleFunc("GET /nyushukkin", c.list)
-	mux.HandleFunc("PUT /nyushukkin/{id}", c.correct)
-	mux.HandleFunc("DELETE /nyushukkin/{id}", c.remove)
+	mux.HandleFunc("POST /nyushukkin", n.record)
+	mux.HandleFunc("GET /nyushukkin", n.list)
+	mux.HandleFunc("PUT /nyushukkin/{id}", n.correct)
+	mux.HandleFunc("DELETE /nyushukkin/{id}", n.remove)
+	mux.HandleFunc("POST /waku", wakuCtl.create)
+	mux.HandleFunc("GET /waku", wakuCtl.list)
+	mux.HandleFunc("PUT /waku/{id}", wakuCtl.rename)
+	mux.HandleFunc("DELETE /waku/{id}", wakuCtl.remove)
 	return mux
 }
 

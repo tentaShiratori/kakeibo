@@ -8,6 +8,7 @@ describe("emptyInput", () => {
       amount: "",
       date: "2026-09-07",
       memo: "",
+      wakuId: "",
     });
   });
 });
@@ -44,7 +45,7 @@ describe("valuesFromEditing", () => {
   test("一件があるときはその値", () => {
     expect(
       valuesFromEditing(
-        { id: "a", kind: "収入", amount: 200, date: "2026-08-01", memo: "返" },
+        { id: "a", kind: "収入", amount: 200, date: "2026-08-01", memo: "返", wakuId: "" },
         "2026-09-07",
       ),
     ).toEqual({
@@ -52,6 +53,7 @@ describe("valuesFromEditing", () => {
       amount: "200",
       date: "2026-08-01",
       memo: "返",
+      wakuId: "",
     });
   });
 });

@@ -1,27 +1,26 @@
-import { parseDate, parseKind, type Nyushukkin, type NyushukkinResult } from "./nyushukkin";
+import { requestJson, type RelayOptions } from "./api";
+import { parseDate, parseKind, type Nyushukkin } from "./nyushukkin";
 
 export type NyushukkinBody = {
   kind: Nyushukkin["kind"];
   amount: number;
   date: string;
   memo: string;
+  wakuId: string;
 };
-
-type RelayOptions = {
-  fetch?: typeof fetch;
-  signal?: AbortSignal;
-};
-
-const unreachable = "api に届きません";
-const unreadable = "帳簿が読めません";
 
 export function getNyushukkin(month: string, options: RelayOptions = {}) {
   const url = `/nyushukkin?month=${encodeURIComponent(month)}`;
-  return request<Nyushukkin[]>(url, { method: "GET", signal: options.signal }, parseList, options);
+  return requestJson<Nyushukkin[]>(
+    url,
+    { method: "GET", signal: options.signal },
+    parseList,
+    options,
+  );
 }
 
 export function postNyushukkin(body: NyushukkinBody, options: RelayOptions = {}) {
-  return request<Nyushukkin>(
+  return requestJson<Nyushukkin>(
     "/nyushukkin",
     { method: "POST", body: JSON.stringify(body) },
     parseItem,
@@ -30,7 +29,7 @@ export function postNyushukkin(body: NyushukkinBody, options: RelayOptions = {})
 }
 
 export function putNyushukkin(id: string, body: NyushukkinBody, options: RelayOptions = {}) {
-  return request<Nyushukkin>(
+  return requestJson<Nyushukkin>(
     `/nyushukkin/${encodeURIComponent(id)}`,
     { method: "PUT", body: JSON.stringify(body) },
     parseItem,
@@ -39,65 +38,12 @@ export function putNyushukkin(id: string, body: NyushukkinBody, options: RelayOp
 }
 
 export function deleteNyushukkin(id: string, options: RelayOptions = {}) {
-  return request<Nyushukkin>(
+  return requestJson<Nyushukkin>(
     `/nyushukkin/${encodeURIComponent(id)}`,
     { method: "DELETE" },
     parseItem,
     options,
   );
-}
-
-async function request<T>(
-  path: string,
-  init: RequestInit,
-  parse: (value: unknown) => T | undefined,
-  options: RelayOptions,
-): Promise<NyushukkinResult<T>> {
-  const headers = new Headers(init.headers);
-  if (init.body != null) {
-    headers.set("Content-Type", "application/json");
-  }
-  let res: Response;
-  try {
-    res = await (options.fetch ?? fetch)(path, {
-      ...init,
-      headers,
-      signal: options.signal ?? init.signal,
-    });
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      throw error;
-    }
-    return { ok: false, error: unreachable };
-  }
-
-  let payload: unknown;
-  try {
-    payload = await res.json();
-  } catch {
-    return { ok: false, error: unreadable };
-  }
-
-  if (!res.ok) {
-    return { ok: false, error: errorMessage(payload) };
-  }
-  const value = parse(payload);
-  if (value === undefined) {
-    return { ok: false, error: unreadable };
-  }
-  return { ok: true, value };
-}
-
-function errorMessage(payload: unknown): string {
-  if (
-    payload &&
-    typeof payload === "object" &&
-    "error" in payload &&
-    typeof payload.error === "string"
-  ) {
-    return payload.error;
-  }
-  return unreadable;
 }
 
 function parseItem(value: unknown): Nyushukkin | undefined {
@@ -122,13 +68,28 @@ function parseItem(value: unknown): Nyushukkin | undefined {
   if (typeof rec.memo !== "string") {
     return undefined;
   }
+  const wakuId = parseWakuId(rec.wakuId);
+  if (wakuId === undefined) {
+    return undefined;
+  }
   return {
     id: rec.id,
     kind: kind.value,
     amount: rec.amount,
     date: date.value,
     memo: rec.memo,
+    wakuId,
   };
+}
+
+function parseWakuId(value: unknown): string | undefined {
+  if (value == null) {
+    return "";
+  }
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  return value.trim();
 }
 
 function parseList(value: unknown): Nyushukkin[] | undefined {

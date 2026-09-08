@@ -19,6 +19,7 @@ const saved: Nyushukkin = {
   amount: 5000,
   date: todayJst(),
   memo: "",
+  wakuId: "",
 };
 
 type RecordFn = (input: NyushukkinInput) => Promise<NyushukkinResult<Nyushukkin>>;
@@ -44,6 +45,7 @@ function renderForm(
   renderApp(
     <NyushukkinForm
       editing={props.editing ?? null}
+      wakus={[]}
       onRecord={onRecord}
       onCorrect={onCorrect}
       onCancel={onCancel}

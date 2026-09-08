@@ -35,7 +35,7 @@ describe("recordNyushukkin", () => {
       recordNyushukkin({ kind: "支出", amount: "5000", date: "2026-09-06", memo: "" }, today, "a"),
     ).toEqual({
       ok: true,
-      value: { id: "a", kind: "支出", amount: 5000, date: "2026-09-06", memo: "" },
+      value: { id: "a", kind: "支出", amount: 5000, date: "2026-09-06", memo: "", wakuId: "" },
     });
   });
 
@@ -48,7 +48,27 @@ describe("recordNyushukkin", () => {
       ),
     ).toEqual({
       ok: true,
-      value: { id: "b", kind: "収入", amount: 200000, date: "2026-09-01", memo: "給料" },
+      value: {
+        id: "b",
+        kind: "収入",
+        amount: 200000,
+        date: "2026-09-01",
+        memo: "給料",
+        wakuId: "",
+      },
+    });
+  });
+
+  test("枠を一つ付けられる", () => {
+    expect(
+      recordNyushukkin(
+        { kind: "支出", amount: "5000", date: "2026-09-06", memo: "", wakuId: "w1" },
+        today,
+        "a",
+      ),
+    ).toEqual({
+      ok: true,
+      value: { id: "a", kind: "支出", amount: 5000, date: "2026-09-06", memo: "", wakuId: "w1" },
     });
   });
 
@@ -67,6 +87,7 @@ describe("correctNyushukkin", () => {
       amount: 5000,
       date: "2026-09-06",
       memo: "",
+      wakuId: "",
     };
     expect(
       correctNyushukkin(

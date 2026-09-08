@@ -29,7 +29,7 @@ test("金額と入出日で支出を記録できる", async () => {
   fireEvent.change(screen.getByLabelText("金額"), { target: { value: "5000" } });
   fireEvent.click(screen.getByRole("button", { name: "記録する" }));
   expect(await screen.findByText(`${todayJst()} 支出 5,000円`)).toBeDefined();
-  expect(screen.getByText("5,000円", { selector: "dd" })).toBeDefined();
+  expect(screen.getAllByText("5,000円", { selector: "dd" }).length).toBeGreaterThan(0);
 });
 
 test("収入を記録できる", async () => {
@@ -39,7 +39,8 @@ test("収入を記録できる", async () => {
   fireEvent.click(screen.getByRole("button", { name: "記録する" }));
   expect(await screen.findByText(`${todayJst()} 収入 200,000円`)).toBeDefined();
   expect(
-    screen.getByText("収入", { selector: "dt" }).parentElement?.querySelector("dd")?.textContent,
+    screen.getAllByText("収入", { selector: "dt" })[0]?.parentElement?.querySelector("dd")
+      ?.textContent,
   ).toBe("200,000円");
 });
 
@@ -118,7 +119,7 @@ test("一覧と収支は見ている暦月だけにする", async () => {
   fireEvent.click(screen.getByRole("button", { name: "次の月" }));
   expect(await screen.findByText(`${today} 支出 5,000円`)).toBeDefined();
   expect(screen.queryByText(`${lastMonth}-15 支出 1,200円`)).toBeNull();
-  expect(screen.getByText("5,000円", { selector: "dd" })).toBeDefined();
+  expect(screen.getAllByText("5,000円", { selector: "dd" }).length).toBeGreaterThan(0);
 });
 
 test("前の月の入出金と収支を見られる", async () => {
@@ -135,7 +136,7 @@ test("前の月の入出金と収支を見られる", async () => {
   expect(await screen.findByText(`${formatCalendarMonth(lastMonth)}の収支`)).toBeDefined();
   expect(screen.getByText(`${lastMonth}-15 支出 1,200円`)).toBeDefined();
   expect(screen.queryByText(`${today} 支出 5,000円`)).toBeNull();
-  expect(screen.getByText("1,200円", { selector: "dd" })).toBeDefined();
+  expect(screen.getAllByText("1,200円", { selector: "dd" }).length).toBeGreaterThan(0);
 });
 
 test("今の月より先には行けない", () => {
@@ -164,4 +165,19 @@ test("他の月にだけ入出金があるときはこの月が空だと分か�
   fireEvent.click(screen.getByRole("button", { name: "次の月" }));
   expect(await screen.findByText("この月の入出金はまだありません")).toBeDefined();
   expect(screen.queryByText("まだ入出金がありません")).toBeNull();
+});
+
+test("枠の名前を足して一件に付けられる", async () => {
+  renderLedger();
+  fireEvent.change(screen.getByLabelText("名前"), { target: { value: "食費" } });
+  fireEvent.click(screen.getByRole("button", { name: "枠を足す" }));
+  expect((await screen.findAllByText("食費")).length).toBeGreaterThan(0);
+  fireEvent.change(screen.getByLabelText("金額"), { target: { value: "5000" } });
+  fireEvent.change(screen.getByLabelText("枠"), { target: { value: "waku-1" } });
+  fireEvent.click(screen.getByRole("button", { name: "記録する" }));
+  expect(await screen.findByText(`${todayJst()} 支出 5,000円`)).toBeDefined();
+  expect(screen.getByText(`${todayJst()} 支出 5,000円`).closest("li")?.textContent).toContain(
+    "食費",
+  );
+  expect(screen.getAllByText("枠なし").length).toBeGreaterThan(0);
 });

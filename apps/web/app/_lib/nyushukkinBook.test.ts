@@ -1,10 +1,10 @@
 import { describe, expect, test } from "vitest";
-import { monthTotals, removeNyushukkin, replaceNyushukkin, sortNyushukkin } from "./nyushukkin";
+import { removeNyushukkin, replaceNyushukkin, sortNyushukkin } from "./nyushukkin";
 
 describe("removeNyushukkin", () => {
   const items = [
-    { id: "a", kind: "支出" as const, amount: 5000, date: "2026-09-06", memo: "" },
-    { id: "b", kind: "支出" as const, amount: 5000, date: "2026-09-06", memo: "" },
+    { id: "a", kind: "支出" as const, amount: 5000, date: "2026-09-06", memo: "", wakuId: "" },
+    { id: "b", kind: "支出" as const, amount: 5000, date: "2026-09-06", memo: "", wakuId: "" },
   ];
 
   test("ある入出金を消せる", () => {
@@ -16,37 +16,24 @@ describe("removeNyushukkin", () => {
   });
 });
 
-describe("monthTotals", () => {
-  const items = [
-    { id: "a", kind: "収入" as const, amount: 200000, date: "2026-09-01", memo: "" },
-    { id: "b", kind: "支出" as const, amount: 5000, date: "2026-09-06", memo: "" },
-    { id: "c", kind: "支出" as const, amount: 1200, date: "2026-08-31", memo: "" },
-  ];
-
-  test("指定した暦月の収入・支出・収支だけを足す", () => {
-    expect(monthTotals(items, "2026-09")).toEqual({
-      income: 200000,
-      expense: 5000,
-      balance: 195000,
-    });
-  });
-
-  test("入出金が無い月は0", () => {
-    expect(monthTotals(items, "2026-07")).toEqual({ income: 0, expense: 0, balance: 0 });
-  });
-});
-
 describe("sortNyushukkin / replaceNyushukkin", () => {
   test("入出日の新しい順にする", () => {
     const items = [
-      { id: "a", kind: "支出" as const, amount: 1, date: "2026-09-01", memo: "" },
-      { id: "b", kind: "支出" as const, amount: 1, date: "2026-09-06", memo: "" },
+      { id: "a", kind: "支出" as const, amount: 1, date: "2026-09-01", memo: "", wakuId: "" },
+      { id: "b", kind: "支出" as const, amount: 1, date: "2026-09-06", memo: "", wakuId: "" },
     ];
     expect(sortNyushukkin(items).map((item) => item.id)).toEqual(["b", "a"]);
   });
 
   test("同じidなら置き換え、無ければ足す", () => {
-    const a = { id: "a", kind: "支出" as const, amount: 1, date: "2026-09-06", memo: "" };
+    const a = {
+      id: "a",
+      kind: "支出" as const,
+      amount: 1,
+      date: "2026-09-06",
+      memo: "",
+      wakuId: "",
+    };
     const next = { ...a, amount: 3 };
     expect(replaceNyushukkin([a], next)).toEqual([next]);
     expect(replaceNyushukkin([], a)).toEqual([a]);

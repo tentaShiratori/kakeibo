@@ -18,6 +18,7 @@ export type Nyushukkin = {
   amount: number;
   date: string;
   memo: string;
+  wakuId: string;
 };
 
 export type NyushukkinInput = {
@@ -25,6 +26,7 @@ export type NyushukkinInput = {
   amount: string;
   date: string;
   memo: string;
+  wakuId?: string;
 };
 
 export type NyushukkinResult<T> = { ok: true; value: T } | { ok: false; error: string };
@@ -64,6 +66,7 @@ export function nyushukkinInputSchema(today: string) {
     amount: amountInputSchema,
     date: dateInputSchema(today),
     memo: memoSchema,
+    wakuId: v.optional(v.pipe(v.string(), v.trim()), ""),
   });
 }
 
@@ -121,17 +124,6 @@ export function replaceNyushukkin(items: Nyushukkin[], next: Nyushukkin): Nyushu
   return items.map((item) => (item.id === next.id ? next : item));
 }
 
-export function monthTotals(items: Nyushukkin[], month: string) {
-  const inMonth = nyushukkinInMonth(items, month);
-  const income = inMonth
-    .filter((item) => item.kind === "収入")
-    .reduce((sum, item) => sum + item.amount, 0);
-  const expense = inMonth
-    .filter((item) => item.kind === "支出")
-    .reduce((sum, item) => sum + item.amount, 0);
-  return { income, expense, balance: income - expense };
-}
-
 export function sortNyushukkin(items: Nyushukkin[]): Nyushukkin[] {
   return [...items].sort((a, b) => {
     if (a.date !== b.date) {
@@ -154,6 +146,7 @@ function assemble(id: string, input: NyushukkinInput, today: string): Nyushukkin
       amount: parsed.value.amount,
       date: parsed.value.date,
       memo: parsed.value.memo,
+      wakuId: parsed.value.wakuId,
     },
   };
 }

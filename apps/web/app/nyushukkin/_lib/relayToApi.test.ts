@@ -88,6 +88,33 @@ describe("relayToApi", () => {
     expect(seen[0]).toBe("http://127.0.0.1:8080/nyushukkin");
   });
 
+  test("枠と振り返りも api に届ける", async () => {
+    const seen: string[] = [];
+    const fetchImpl: typeof fetch = async (input) => {
+      seen.push(String(input));
+      return new Response("[]", { status: 200 });
+    };
+
+    await relayToApi(new Request("http://web.example/waku"), "/waku", {
+      fetch: fetchImpl,
+      apiUrl: "http://api.example",
+    });
+    await relayToApi(new Request("http://web.example/waku/id-1"), "/waku/id-1", {
+      fetch: fetchImpl,
+      apiUrl: "http://api.example",
+    });
+    await relayToApi(new Request("http://web.example/furikaeri?month=2026-09"), "/furikaeri", {
+      fetch: fetchImpl,
+      apiUrl: "http://api.example",
+    });
+
+    expect(seen).toEqual([
+      "http://api.example/waku",
+      "http://api.example/waku/id-1",
+      "http://api.example/furikaeri?month=2026-09",
+    ]);
+  });
+
   test("api に届かなければ 502 にする", async () => {
     const fetchImpl: typeof fetch = async () => {
       throw new Error("ECONNREFUSED");
@@ -127,14 +154,14 @@ describe("relayToApi", () => {
     }
   });
 
-  test("入出金以外の口は届けない", async () => {
+  test("許可していない口は届けない", async () => {
     let called = false;
     const fetchImpl: typeof fetch = async () => {
       called = true;
       return new Response(null, { status: 200 });
     };
 
-    for (const path of ["/waku", "/nyushukkin/a/b", "/nyushukkin/"]) {
+    for (const path of ["/secret", "/nyushukkin/a/b", "/nyushukkin/"]) {
       called = false;
       const res = await relayToApi(new Request("http://web.example/waku"), path, {
         fetch: fetchImpl,

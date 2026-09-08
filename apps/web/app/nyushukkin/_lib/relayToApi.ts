@@ -1,5 +1,5 @@
 const defaultApiUrl = "http://127.0.0.1:8080";
-const pathPattern = /^\/nyushukkin(?:\/[^/]+)?$/;
+const pathPattern = /^\/(?:nyushukkin(?:\/[^/]+)?|waku(?:\/[^/]+)?|furikaeri)$/;
 
 type RelayToApiOptions = {
   fetch?: typeof fetch;

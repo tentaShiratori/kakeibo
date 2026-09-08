@@ -36,9 +36,9 @@ describe("shiftCalendarMonth / formatCalendarMonth / isCurrentOrPastMonth", () =
 
 describe("nyushukkinInMonth", () => {
   const items = [
-    { id: "a", kind: "収入" as const, amount: 200000, date: "2026-09-01", memo: "" },
-    { id: "b", kind: "支出" as const, amount: 5000, date: "2026-09-06", memo: "" },
-    { id: "c", kind: "支出" as const, amount: 1200, date: "2026-08-31", memo: "" },
+    { id: "a", kind: "収入" as const, amount: 200000, date: "2026-09-01", memo: "", wakuId: "" },
+    { id: "b", kind: "支出" as const, amount: 5000, date: "2026-09-06", memo: "", wakuId: "" },
+    { id: "c", kind: "支出" as const, amount: 1200, date: "2026-08-31", memo: "", wakuId: "" },
   ];
 
   test("指定した暦月の入出金だけ残す", () => {

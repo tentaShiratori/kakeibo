@@ -1,6 +1,6 @@
 import type { Nyushukkin, NyushukkinInput } from "./nyushukkin";
 
-const fieldOrder = ["kind", "amount", "date", "memo"] as const;
+const fieldOrder = ["kind", "amount", "date", "memo", "wakuId"] as const;
 
 export function emptyInput(today: string): NyushukkinInput {
   return {
@@ -8,6 +8,7 @@ export function emptyInput(today: string): NyushukkinInput {
     amount: "",
     date: today,
     memo: "",
+    wakuId: "",
   };
 }
 
@@ -68,5 +69,6 @@ export function valuesFromEditing(editing: Nyushukkin | null, today: string): Ny
     amount: String(editing.amount),
     date: editing.date,
     memo: editing.memo,
+    wakuId: editing.wakuId,
   };
 }

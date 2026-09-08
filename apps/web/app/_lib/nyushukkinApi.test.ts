@@ -5,7 +5,14 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const item = { id: "a", kind: "支出" as const, amount: 5000, date: "2026-09-08", memo: "米" };
+const item = {
+  id: "a",
+  kind: "支出" as const,
+  amount: 5000,
+  date: "2026-09-08",
+  memo: "米",
+  wakuId: "",
+};
 
 describe("getNyushukkin", () => {
   test("暦月の一覧を取る", async () => {
@@ -35,14 +42,20 @@ describe("postNyushukkin", () => {
       expect(String(input)).toBe("/nyushukkin");
       expect(init?.method).toBe("POST");
       expect(init?.body).toBe(
-        JSON.stringify({ kind: "支出", amount: 5000, date: "2026-09-08", memo: "米" }),
+        JSON.stringify({
+          kind: "支出",
+          amount: 5000,
+          date: "2026-09-08",
+          memo: "米",
+          wakuId: "",
+        }),
       );
       return Response.json(item, { status: 201 });
     });
 
     await expect(
       postNyushukkin(
-        { kind: "支出", amount: 5000, date: "2026-09-08", memo: "米" },
+        { kind: "支出", amount: 5000, date: "2026-09-08", memo: "米", wakuId: "" },
         { fetch: fetchImpl },
       ),
     ).resolves.toEqual({ ok: true, value: item });
@@ -65,7 +78,7 @@ describe("putNyushukkin / deleteNyushukkin", () => {
     await expect(
       putNyushukkin(
         "a",
-        { kind: "支出", amount: 3000, date: "2026-09-08", memo: "米" },
+        { kind: "支出", amount: 3000, date: "2026-09-08", memo: "米", wakuId: "" },
         { fetch: fetchPut },
       ),
     ).resolves.toEqual({ ok: true, value: { ...item, amount: 3000 } });

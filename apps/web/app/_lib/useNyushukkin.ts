@@ -64,6 +64,7 @@ export function useNyushukkin(month: string) {
       amount: recorded.value.amount,
       date: recorded.value.date,
       memo: recorded.value.memo,
+      wakuId: recorded.value.wakuId,
     });
     if (!saved.ok) {
       return saved;
@@ -93,6 +94,7 @@ export function useNyushukkin(month: string) {
       amount: recorded.value.amount,
       date: recorded.value.date,
       memo: recorded.value.memo,
+      wakuId: recorded.value.wakuId,
     });
     if (!saved.ok) {
       return saved;
@@ -131,6 +133,7 @@ export function useNyushukkin(month: string) {
       amount: removed.amount,
       date: removed.date,
       memo: removed.memo,
+      wakuId: removed.wakuId,
     });
     if (!saved.ok) {
       return saved;

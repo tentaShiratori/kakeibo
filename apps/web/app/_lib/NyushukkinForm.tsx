@@ -3,7 +3,7 @@
 import { useForm } from "@tanstack/react-form";
 import { useRef, useState } from "react";
 import { Button } from "./Button";
-import { Field, TextInput } from "./Field";
+import { Field, Select, TextInput } from "./Field";
 import { emptyInput, firstSubmitError, valuesFromEditing } from "./formInput";
 import {
   kinds,
@@ -13,15 +13,18 @@ import {
   type NyushukkinInput,
   type NyushukkinResult,
 } from "./nyushukkin";
+import type { Waku } from "./waku";
 
 export function NyushukkinForm({
   editing,
+  wakus,
   onRecord,
   onCorrect,
   onCancel,
   onSaved,
 }: {
   editing: Nyushukkin | null;
+  wakus: Waku[];
   onRecord: (input: NyushukkinInput) => Promise<NyushukkinResult<Nyushukkin>>;
   onCorrect: (id: string, input: NyushukkinInput) => Promise<NyushukkinResult<Nyushukkin>>;
   onCancel: () => void;
@@ -123,6 +126,26 @@ export function NyushukkinForm({
               onBlur={field.handleBlur}
               onChange={(event) => field.handleChange(event.target.value)}
             />
+          </Field>
+        )}
+      </form.Field>
+      <form.Field name="wakuId">
+        {(field) => (
+          <Field label="枠" htmlFor="nyushukkin-waku">
+            <Select
+              id="nyushukkin-waku"
+              name={field.name}
+              value={field.state.value ?? ""}
+              onBlur={field.handleBlur}
+              onChange={(event) => field.handleChange(event.target.value)}
+            >
+              <option value="">枠なし</option>
+              {wakus.map((waku) => (
+                <option key={waku.id} value={waku.id}>
+                  {waku.name}
+                </option>
+              ))}
+            </Select>
           </Field>
         )}
       </form.Field>

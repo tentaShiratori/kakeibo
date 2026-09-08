@@ -34,7 +34,20 @@ func New(app usecase.App, nyushukkinQuery nyushukkin_query.Repository, wakuQuery
 	mux.HandleFunc("PUT /waku/{id}", wakuCtl.rename)
 	mux.HandleFunc("DELETE /waku/{id}", wakuCtl.remove)
 	mux.HandleFunc("GET /furikaeri", furikaeriCtl.get)
-	return mux
+	return withCORS(mux)
+}
+
+func withCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (c *Nyushukkin) record(w http.ResponseWriter, r *http.Request) {

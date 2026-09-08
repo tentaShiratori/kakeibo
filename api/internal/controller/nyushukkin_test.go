@@ -139,6 +139,18 @@ func TestNyushukkinAssignsID(t *testing.T) {
 	}
 }
 
+func TestCORS(t *testing.T) {
+	ts := testServer(t)
+	res, _ := doJSON(t, ts, http.MethodOptions, "/nyushukkin", "", http.StatusNoContent)
+	if res.Header.Get("Access-Control-Allow-Origin") != "*" {
+		t.Fatalf("cors origin %q", res.Header.Get("Access-Control-Allow-Origin"))
+	}
+	created := postNyushukkin(t, ts, `{"kind":"支出","amount":1,"date":"2026-09-06","memo":""}`, http.StatusCreated)
+	if created.ID == "" {
+		t.Fatal("expected create after options")
+	}
+}
+
 func testServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	now := mustTime("2026-09-06T12:00:00+09:00")

@@ -45,6 +45,7 @@ function renderForm(
   renderApp(
     <NyushukkinForm
       editing={props.editing ?? null}
+      wakus={[{ id: "w1", name: "食費" }]}
       onRecord={onRecord}
       onCorrect={onCorrect}
       onCancel={onCancel}
@@ -102,9 +103,11 @@ test("やめると onCancel を呼ぶ", () => {
   expect(onCancel).toHaveBeenCalled();
 });
 
-test("枠の選択は出さない", () => {
+test("既存の枠だけ付けられる", () => {
   renderForm();
-  expect(screen.queryByLabelText("枠")).toBeNull();
+  expect(screen.getByLabelText("枠")).toBeDefined();
+  expect((screen.getByRole("option", { name: "枠なし" }) as HTMLOptionElement).value).toBe("");
+  expect((screen.getByRole("option", { name: "食費" }) as HTMLOptionElement).value).toBe("w1");
 });
 
 test("直すとき既存の枠は外さない", async () => {

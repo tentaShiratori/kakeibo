@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { calendarMonth } from "./calendarMonth";
 import {
   correctNyushukkin,
@@ -18,7 +18,11 @@ export function useNyushukkin(month: string) {
   const [items, setItems] = useState<Nyushukkin[]>([]);
   const [removed, setRemoved] = useState<Nyushukkin | null>(null);
   const [loadError, setLoadError] = useState("");
-  const monthsWithItems = useRef(new Set<string>());
+  const [monthsWithItems, setMonthsWithItems] = useState<string[]>([]);
+
+  function noteMonth(key: string) {
+    setMonthsWithItems((current) => (current.includes(key) ? current : [...current, key]));
+  }
 
   useEffect(() => {
     const ac = new AbortController();
@@ -36,7 +40,7 @@ export function useNyushukkin(month: string) {
         }
         setItems(listed.value);
         if (listed.value.length > 0) {
-          monthsWithItems.current.add(month);
+          noteMonth(month);
         }
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
@@ -48,7 +52,7 @@ export function useNyushukkin(month: string) {
     return () => ac.abort();
   }, [month]);
 
-  const hasOtherMonths = [...monthsWithItems.current].some((key) => key !== month);
+  const hasOtherMonths = monthsWithItems.some((key) => key !== month);
 
   async function onRecord(input: NyushukkinInput): Promise<NyushukkinResult<Nyushukkin>> {
     const recorded = recordNyushukkin(input, todayJst(), "pending");
@@ -65,7 +69,7 @@ export function useNyushukkin(month: string) {
       return saved;
     }
     const savedMonth = calendarMonth(saved.value.date);
-    monthsWithItems.current.add(savedMonth);
+    noteMonth(savedMonth);
     if (savedMonth === month) {
       setItems((current) => replaceNyushukkin(current, saved.value));
     }
@@ -94,7 +98,7 @@ export function useNyushukkin(month: string) {
       return saved;
     }
     const savedMonth = calendarMonth(saved.value.date);
-    monthsWithItems.current.add(savedMonth);
+    noteMonth(savedMonth);
     if (savedMonth === month) {
       setItems((currentItems) => replaceNyushukkin(currentItems, saved.value));
     } else {
@@ -132,7 +136,7 @@ export function useNyushukkin(month: string) {
       return saved;
     }
     const savedMonth = calendarMonth(saved.value.date);
-    monthsWithItems.current.add(savedMonth);
+    noteMonth(savedMonth);
     if (savedMonth === month) {
       setItems((current) => replaceNyushukkin(current, saved.value));
     }

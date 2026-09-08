@@ -10,7 +10,7 @@ const params = Promise.resolve({ id: "id-1" });
 
 describe("PUT /nyushukkin/[id]", () => {
   test("起動設定の api へ直すを届ける", async () => {
-    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+    const fetchImpl = vi.fn<typeof fetch>(async (input) => {
       expect(String(input)).toBe("http://api.example/nyushukkin/id-1");
       return new Response("{}", { status: 200 });
     });
@@ -28,7 +28,7 @@ describe("PUT /nyushukkin/[id]", () => {
 
 describe("DELETE /nyushukkin/[id]", () => {
   test("起動設定の api へ消すを届ける", async () => {
-    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+    const fetchImpl = vi.fn<typeof fetch>(async (input) => {
       expect(String(input)).toBe("http://api.example/nyushukkin/id-1");
       return new Response("{}", { status: 200 });
     });

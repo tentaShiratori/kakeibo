@@ -8,7 +8,7 @@ afterEach(() => {
 
 describe("GET /nyushukkin", () => {
   test("起動設定の api へ一覧を届ける", async () => {
-    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+    const fetchImpl = vi.fn<typeof fetch>(async (input) => {
       expect(String(input)).toBe("http://api.example/nyushukkin?month=2026-09");
       return new Response("[]", { status: 200 });
     });
@@ -24,7 +24,7 @@ describe("GET /nyushukkin", () => {
 
 describe("POST /nyushukkin", () => {
   test("起動設定の api へ記録を届ける", async () => {
-    const fetchImpl = vi.fn(async (input: RequestInfo | URL) => {
+    const fetchImpl = vi.fn<typeof fetch>(async (input) => {
       expect(String(input)).toBe("http://api.example/nyushukkin");
       return new Response("{}", { status: 201 });
     });

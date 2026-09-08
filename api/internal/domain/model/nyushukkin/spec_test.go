@@ -130,6 +130,27 @@ func TestHasWaku(t *testing.T) {
 	})
 }
 
+func TestTotalsOf(t *testing.T) {
+	items := []Nyushukkin{
+		{ID: "a", Kind: "収入", Amount: 200000, Date: "2026-09-01"},
+		{ID: "b", Kind: "支出", Amount: 5000, Date: "2026-09-06"},
+		{ID: "c", Kind: "支出", Amount: 1200, Date: "2026-08-31"},
+	}
+	t.Run("収入と支出と収支を足す", func(t *testing.T) {
+		got := TotalsOf(items)
+		want := Totals{Income: 200000, Expense: 6200, Balance: 193800}
+		if got != want {
+			t.Fatalf("got %+v want %+v", got, want)
+		}
+	})
+	t.Run("空は0", func(t *testing.T) {
+		got := TotalsOf(nil)
+		if got != (Totals{}) {
+			t.Fatalf("got %+v", got)
+		}
+	})
+}
+
 func TestFromStoredWakuID(t *testing.T) {
 	t.Run("枠が無い保存も読める", func(t *testing.T) {
 		got, ok := FromStored(map[string]any{

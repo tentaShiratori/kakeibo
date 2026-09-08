@@ -6,7 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/tentaShiratori/kakeibo/api/internal/domain/model/nyushukkin"
 	"github.com/tentaShiratori/kakeibo/api/internal/domain/model/waku"
+	"github.com/tentaShiratori/kakeibo/api/internal/query/furikaeri_query"
 )
 
 func TestWaku(t *testing.T) {
@@ -106,6 +108,43 @@ func TestNyushukkinWaku(t *testing.T) {
 
 	_, body = doJSON(t, ts, http.MethodPost, "/nyushukkin", `{"kind":"支出","amount":1,"date":"2026-09-06","memo":"","wakuId":["`+food.ID+`","`+rent.ID+`"]}`, http.StatusBadRequest)
 	assertError(t, body, "入力が読めません")
+}
+
+func TestFurikaeri(t *testing.T) {
+	ts := testServer(t)
+	food := postWaku(t, ts, `{"name":"食費"}`, http.StatusCreated)
+	postWaku(t, ts, `{"name":"家賃"}`, http.StatusCreated)
+	postNyushukkin(t, ts, `{"kind":"収入","amount":200000,"date":"2026-09-01","memo":""}`, http.StatusCreated)
+	postNyushukkin(t, ts, `{"kind":"支出","amount":3000,"date":"2026-09-06","memo":"","wakuId":"`+food.ID+`"}`, http.StatusCreated)
+	postNyushukkin(t, ts, `{"kind":"支出","amount":2000,"date":"2026-09-06","memo":""}`, http.StatusCreated)
+
+	_, raw := doJSON(t, ts, http.MethodGet, "/furikaeri?month=2026-09", "", http.StatusOK)
+	var got furikaeri_query.Furikaeri
+	if err := json.Unmarshal(raw, &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Month != "2026-09" || got.Income != 200000 || got.Expense != 5000 || got.Balance != 195000 {
+		t.Fatalf("month %+v", got)
+	}
+	if len(got.Waku) != 2 || got.Waku[0].Name != "家賃" || got.Waku[0].Expense != 0 || got.Waku[1].Name != "食費" || got.Waku[1].Expense != 3000 {
+		t.Fatalf("waku %+v", got.Waku)
+	}
+	if got.None.Income != 200000 || got.None.Expense != 2000 {
+		t.Fatalf("none %+v", got.None)
+	}
+	var income, expense int64
+	for _, row := range got.Waku {
+		income += row.Income
+		expense += row.Expense
+	}
+	if income+got.None.Income != got.Income || expense+got.None.Expense != got.Expense {
+		t.Fatalf("waku+none does not match month %+v", got)
+	}
+
+	_, body := doJSON(t, ts, http.MethodGet, "/furikaeri", "", http.StatusBadRequest)
+	assertError(t, body, nyushukkin.MonthError)
+	_, body = doJSON(t, ts, http.MethodGet, "/furikaeri?month=2026-13", "", http.StatusBadRequest)
+	assertError(t, body, nyushukkin.MonthFormat)
 }
 
 func postWaku(t *testing.T, ts *httptest.Server, body string, status int) waku.Waku {

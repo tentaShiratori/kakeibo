@@ -23,6 +23,7 @@ type Nyushukkin struct {
 func New(app usecase.App, nyushukkinQuery nyushukkin_query.Repository, wakuQuery waku_query.Repository) http.Handler {
 	n := &Nyushukkin{app: app, query: nyushukkinQuery}
 	wakuCtl := &Waku{app: app, query: wakuQuery}
+	furikaeriCtl := &Furikaeri{nyushukkin: nyushukkinQuery, waku: wakuQuery}
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /nyushukkin", n.record)
 	mux.HandleFunc("GET /nyushukkin", n.list)
@@ -32,6 +33,7 @@ func New(app usecase.App, nyushukkinQuery nyushukkin_query.Repository, wakuQuery
 	mux.HandleFunc("GET /waku", wakuCtl.list)
 	mux.HandleFunc("PUT /waku/{id}", wakuCtl.rename)
 	mux.HandleFunc("DELETE /waku/{id}", wakuCtl.remove)
+	mux.HandleFunc("GET /furikaeri", furikaeriCtl.get)
 	return mux
 }
 

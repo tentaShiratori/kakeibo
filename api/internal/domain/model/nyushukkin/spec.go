@@ -111,6 +111,25 @@ func HasWaku(items []Nyushukkin, wakuID string) bool {
 	return false
 }
 
+type Totals struct {
+	Income  int64 `json:"income"`
+	Expense int64 `json:"expense"`
+	Balance int64 `json:"balance"`
+}
+
+func TotalsOf(items []Nyushukkin) Totals {
+	var income, expense int64
+	for _, item := range items {
+		switch item.Kind {
+		case kindIncome:
+			income += item.Amount
+		case kindExpense:
+			expense += item.Amount
+		}
+	}
+	return Totals{Income: income, Expense: expense, Balance: income - expense}
+}
+
 func Sort(items []Nyushukkin) []Nyushukkin {
 	out := slices.Clone(items)
 	slices.SortFunc(out, func(a, b Nyushukkin) int {

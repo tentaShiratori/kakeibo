@@ -3,9 +3,9 @@ import { relayToApi } from "./relayToApi";
 
 describe("relayToApi", () => {
   test("一覧の query を api に渡す", async () => {
-    const seen: RequestInit & { url?: string }[] = [];
+    const seen: { url: string; method?: string }[] = [];
     const fetchImpl: typeof fetch = async (input, init) => {
-      seen.push({ url: String(input), ...init });
+      seen.push({ url: String(input), method: init?.method });
       return new Response("[]", { status: 200 });
     };
 

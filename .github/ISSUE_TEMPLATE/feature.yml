@@ -1,51 +1,72 @@
-name: 機能
-description: 新しい動きや足したい仕事を提案する
-title: "[機能] "
+name: 機能追加
+description: 新しい動きや足したい仕事
+labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        用語は `CONTEXT.md` に合わせる。新しい呼び方が要るなら、先に用語を決める。
+        用語は `CONTEXT.md`。ブランチは `{type}/{issue番号}-{slug}`（AGENTS.md）。
+        番号は作成後にしか分からないので、作った直後に「ブランチ」を `feat/3-bun` の形へ直す。
+  - type: textarea
+    id: overview
+    attributes:
+      label: 概要
+      description: 何をするか
+    validations:
+      required: true
   - type: dropdown
-    id: surface
+    id: branch_type
     attributes:
-      label: 面
-      description: 載せる場所。まだ決まっていなければ「わからない」
+      label: ブランチの type
       options:
-        - apps/web
-        - apps/app
-        - api
-        - わからない
+        - feat
+        - fix
+        - chore
     validations:
       required: true
-  - type: textarea
-    id: want
+  - type: input
+    id: slug
     attributes:
-      label: 欲しい動き
-      description: 誰が、何を、どうできるようになるか
-      placeholder: 例）暦月の振り返りで、収入合計・支出合計・収支を同じ月で見られる
+      label: ブランチの slug
+      description: 英小文字とハイフン。CONTEXT のローマ字をケバブにする
+      placeholder: bun
     validations:
       required: true
-  - type: textarea
-    id: why
+  - type: input
+    id: blocked_by
     attributes:
-      label: なぜ今か
-      description: 無いと困る場面。任意。
+      label: Blocked by
+      description: 先に終わる issue。無ければ空
+      placeholder: "#3"
     validations:
       required: false
   - type: textarea
+    id: spec
+    attributes:
+      label: 仕様
+      description: docs や CONTEXT へのリンク。任意
+      placeholder: "[docs/design.md](../docs/design.md)"
+    validations:
+      required: false
+  - type: textarea
+    id: todos
+    attributes:
+      label: やること
+      value: |
+        - [ ]
+    validations:
+      required: true
+  - type: textarea
     id: done
     attributes:
-      label: これで足りる
+      label: 完了
       description: 満たせば終わり、と言える条件
-      placeholder: 例）今週の実費を残せて、同じブラウザで翌週も見られる
     validations:
       required: true
   - type: textarea
     id: out
     attributes:
       label: やらないこと
-      description: 今回は開かない範囲。任意。
-      placeholder: 例）枠の名前、api、app
+      description: 今回は開かない範囲。任意
     validations:
       required: false

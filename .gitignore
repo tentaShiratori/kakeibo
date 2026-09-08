@@ -53,3 +53,6 @@ kakeibo.json.tmp
 # 個人の上書き。共有しない
 lefthook-local.yml
 lefthook-local.yaml
+
+# --- progress ---
+progress.md

@@ -16,11 +16,11 @@
     "tauri": "pnpm --filter @kakeibo/app tauri"
   },
   "devDependencies": {
-    "@types/node": "^26.5.1",
+    "@types/node": "^26.6.1",
     "fallow": "^3.27.0",
     "oxfmt": "^0.68.0",
-    "skills": "^1.5.26",
-    "turbo": "^2.3.3",
+    "skills": "^1.7.0",
+    "turbo": "^2.10.13",
     "typescript": "7.0.2"
   },
   "packageManager": "pnpm@11.17.0"

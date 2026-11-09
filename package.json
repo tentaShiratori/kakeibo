@@ -19,7 +19,7 @@
     "@types/node": "^26.6.6",
     "fallow": "^3.37.0",
     "oxfmt": "^0.75.0",
-    "skills": "^1.7.4",
+    "skills": "^1.7.6",
     "turbo": "^2.11.10",
     "typescript": "7.0.2"
   },
